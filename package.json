@@ -1,0 +1,22 @@
+{
+  "name": "domily",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/cjs/index.js",
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "keywords": [
+    "dom",
+    "schema",
+    "scheme"
+  ],
+  "files": [
+    "lib"
+  ],
+  "author": "w-xuefeng",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
