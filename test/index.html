@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test</title>
+</head>
+
+<body>
+  <script type="module">
+    import { createDomily } from "../lib/index.esm.js";
+
+    const testCustomElements = {
+      'test-element-1': class TestElement extends HTMLElement {
+        constructor() {
+          super()
+        }
+        connectedCallback() {
+          this.innerHTML = "Test Element 1"
+        }
+      },
+      'test-element-2': class TestElement extends HTMLElement {
+        constructor() {
+          super()
+        }
+        connectedCallback() {
+          this.innerHTML = "Test Element 1"
+        }
+      },
+    }
+
+    const testCustomElementTags = Object.keys(testCustomElements);
+
+    testCustomElementTags.forEach(e => {
+      customElements.define(e, testCustomElements[e])
+    })
+
+    const Domily = createDomily(testCustomElementTags)
+    const abortController = new AbortController()
+    const dom = Domily.div({
+      className: "test",
+      children: [
+        Domily.h1({
+          text: "Hello World",
+          className: "title",
+          events: {
+            click: () => {
+              console.log("Title clicked");
+            },
+          },
+        }),
+        Domily.p({
+          text: "This is a paragraph.",
+          className: "paragraph",
+        }),
+        Domily['test-element-1']({
+          style: {
+            display: "block",
+            color: "deepskyblue",
+          },
+        }),
+        Domily['test-element-2']({
+          style: {
+            display: "block",
+            color: "red",
+          },
+        }),
+        Domily.button({
+          id: 'btn-1',
+          text: "button 1",
+          className: "button",
+          events: {
+            click: () => {
+              console.log("Button 1 clicked");
+              abortController.abort();
+            },
+          },
+        }),
+        Domily.button({
+          id: 'btn-2',
+          text: "button 2",
+          className: "button",
+          events: {
+            click: {
+              event: () => {
+                console.log("Button 2 clicked");
+              },
+              option: {
+                signal: abortController.signal,
+              }
+            },
+          },
+        }),
+      ],
+    });
+    dom.mount();
+  </script>
+</body>
+
+</html>

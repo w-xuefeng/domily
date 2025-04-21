@@ -1,3 +1,7 @@
+export interface CustomElementTagName {
+  [k: string]: HTMLElement;
+}
+
 export const HTMLElementTagName = {
   text: Text,
   a: HTMLAnchorElement,

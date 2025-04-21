@@ -20,8 +20,8 @@ export interface DOMilyReturnType<
   unmount: () => void;
 }
 
-export type DOMily = {
-  [k in keyof typeof HTMLElementTagName]: <
+export type DOMily<ElementName extends string> = {
+  [k in DOMilyTags<ElementName>]: <
     K extends DOMilyTags,
     C extends DOMilyChildren,
     EK extends DOMilyEventKeys
@@ -36,12 +36,15 @@ export type DOMily = {
   >(
     schema: Partial<DomilyRenderSchema<K, C, EK>> & { tag: K }
   ) => DOMilyReturnType<K, C, EK>;
+  registerElement<T extends string>(tag: T): DOMily<ElementName | T>;
 };
 
-function main() {
+export function createDomily<
+  ElementNames extends string = keyof HTMLElementTagNameMap
+>(customElement?: ElementNames[]) {
   const Domily = {
     render<
-      K extends DOMilyTags,
+      K extends DOMilyTags<ElementNames>,
       C extends DOMilyChildren,
       EK extends DOMilyEventKeys
     >(schema: Partial<DomilyRenderSchema<K, C, EK>> & { tag: K }) {
@@ -79,23 +82,29 @@ function main() {
         },
       };
     },
+    registerElement<T extends string>(tag: T) {
+      Reflect.set(
+        Domily,
+        tag,
+        (schema?: Omit<Partial<DomilyRenderSchema<T, any, any>>, "tag">) => {
+          return Domily.render<any, any, any>({
+            ...schema,
+            tag,
+          });
+        }
+      );
+      return Domily as DOMily<ElementNames | T>;
+    },
   };
   Object.keys(HTMLElementTagName).forEach((tag) => {
-    Reflect.set(
-      Domily,
-      tag,
-      <
-        K extends DOMilyTags,
-        C extends DOMilyChildren,
-        EK extends DOMilyEventKeys
-      >(
-        schema?: Omit<Partial<DomilyRenderSchema<K, C, EK>>, "tag">
-      ) => {
-        return Domily.render({ tag: tag as K, ...schema });
-      }
-    );
+    Domily.registerElement(tag);
   });
-  return Domily as DOMily;
+  if (customElement?.length) {
+    customElement.forEach((tag) => {
+      Domily.registerElement(tag);
+    });
+  }
+  return Domily as DOMily<ElementNames>;
 }
 
-export default main();
+export const Domily = createDomily();

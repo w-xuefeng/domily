@@ -1,9 +1,13 @@
 import { h } from "../../utils/dom";
 
-export type DOMilyTags = keyof HTMLElementTagNameMap | "text";
+export type DOMilyTags<ElementTagName = string> =
+  | (keyof HTMLElementTagNameMap | "text")
+  | ElementTagName;
+
 export type DOMilyChildren =
   | (
       | DomilyRenderSchema<any, any, any>
+      | { schema: DomilyRenderSchema<any, any, any>; dom: DOMilyChildren }
       | HTMLElement
       | Node
       | string
@@ -45,11 +49,13 @@ export default class DomilyRenderSchema<
   children?: C;
   text?: string | number;
   html?: string;
+  id?: string;
   className?: string;
   style?: string | Record<string, any>;
   events?: DOMilyEventListenerRecord<EK>;
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
+  childrenSchema: DomilyRenderSchema<any, any, any>[] = [];
   eventsAbortController: Map<EK, AbortController> = new Map();
 
   static create<
@@ -67,6 +73,7 @@ export default class DomilyRenderSchema<
     this.children = schema.children;
     this.text = schema.text;
     this.html = schema.html;
+    this.id = schema.id;
     this.className = schema.className;
     this.style = schema.style;
     this.events = this.handleEvents(schema.events);
@@ -78,16 +85,15 @@ export default class DomilyRenderSchema<
     originalOptions: AddEventListenerOptions | undefined,
     abortController: AbortController
   ) {
-    if (!originalOptions?.signal) {
-      return {
-        ...originalOptions,
-        signal: abortController.signal,
-      } as AddEventListenerOptions;
+    if (originalOptions?.signal) {
+      originalOptions.signal.addEventListener("abort", () => {
+        abortController.abort();
+      });
     }
-    originalOptions.signal.addEventListener("abort", () => {
-      abortController.abort();
-    });
-    return originalOptions;
+    return {
+      ...originalOptions,
+      signal: abortController.signal,
+    } as AddEventListenerOptions;
   }
 
   handleEvents(events?: DOMilyEventListenerRecord<EK>) {
@@ -138,9 +144,9 @@ export default class DomilyRenderSchema<
               },
             ];
           }
-          return null;
+          return [];
         })
-        .filter((e) => !!e)
+        .filter((e) => e.length)
     ) as DOMilyEventListenerRecord<EK>;
   }
 
@@ -186,6 +192,10 @@ export default class DomilyRenderSchema<
         if (typeof child === "string") {
           return document.createTextNode(child);
         }
+        if (typeof child === "object" && "schema" in child && "dom" in child) {
+          this.childrenSchema.push(child.schema);
+          return child.dom;
+        }
         return new DomilyRenderSchema(child).render();
       })
       .filter((e) => !!e) || []) as (HTMLElement | Node | string)[];
@@ -196,12 +206,13 @@ export default class DomilyRenderSchema<
       this.tag,
       {
         ...this.props,
+        ...(this.id ? { id: this.id } : {}),
+        ...(this.className ? { className: this.className } : {}),
         ...(this.html
           ? { innerHTML: this.html }
           : this.text
           ? { innerText: this.text }
           : {}),
-        className: this.className,
         attrs: this.attrs,
         style: hidden
           ? typeof this.style === "string"

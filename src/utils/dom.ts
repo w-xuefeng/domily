@@ -1,3 +1,5 @@
+import { CustomElementTagName } from "./tags";
+
 export function $<E extends Element = Element>(
   selector: string,
   container: HTMLElement | Document = document
@@ -175,6 +177,27 @@ export function setCssVar(
     }
   });
 }
+
+export function h<K extends keyof CustomElementTagName>(
+  tagName: K,
+  properties?:
+    | (Partial<
+        Record<keyof HTMLElement | keyof CustomElementTagName[K], any>
+      > & {
+        attrs?: Record<string, string>;
+        on?: Record<
+          string | keyof HTMLElementEventMap,
+          | EventListenerOrEventListenerObject
+          | {
+              event: EventListenerOrEventListenerObject;
+              option?: boolean | AddEventListenerOptions;
+            }
+        >;
+        [k: string]: any;
+      })
+    | null,
+  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+): CustomElementTagName[K];
 
 export function h<K extends keyof HTMLElementTagNameMap>(
   tagName: K,
