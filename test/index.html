@@ -38,22 +38,32 @@
 
     const Domily = createDomily(testCustomElementTags)
     const abortController = new AbortController()
-    const dom = Domily.div({
+
+    const h1 = Domily.h1({
+      text: '0',
+      className: "title",
+      style: {
+        color: "red",
+        fontSize: "50px",
+      },
+      events: {
+        click: () => {
+          h1.schema.text = Number(h1.schema.text) + 1;
+        },
+      }
+    });
+
+    const p1 = Domily.p({
+      domShow: true,
+      text: "This is a paragraph.",
+      className: "paragraph",
+    })
+
+    const x = {
       className: "test",
       children: [
-        Domily.h1({
-          text: "Hello World",
-          className: "title",
-          events: {
-            click: () => {
-              console.log("Title clicked");
-            },
-          },
-        }),
-        Domily.p({
-          text: "This is a paragraph.",
-          className: "paragraph",
-        }),
+        h1,
+        p1,
         Domily['test-element-1']({
           style: {
             display: "block",
@@ -72,28 +82,13 @@
           className: "button",
           events: {
             click: () => {
-              console.log("Button 1 clicked");
-              abortController.abort();
+              p1.schema.domShow = !p1.schema.domShow;
             },
           },
-        }),
-        Domily.button({
-          id: 'btn-2',
-          text: "button 2",
-          className: "button",
-          events: {
-            click: {
-              event: () => {
-                console.log("Button 2 clicked");
-              },
-              option: {
-                signal: abortController.signal,
-              }
-            },
-          },
-        }),
+        })
       ],
-    });
+    }
+    const dom = Domily.div(x);
     dom.mount();
   </script>
 </body>

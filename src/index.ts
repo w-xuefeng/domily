@@ -3,6 +3,7 @@ import DomilyRenderSchema, {
   type DOMilyEventKeys,
   type DOMilyTags,
 } from "./core/schemas/render";
+import { replaceDOM } from "./utils/dom";
 import { HTMLElementTagName } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
@@ -13,11 +14,11 @@ export interface DOMilyReturnType<
   C extends DOMilyChildren = null,
   EK extends DOMilyEventKeys = DOMilyEventKeys
 > {
-  dom: HTMLElement | Node | null;
+  dom: HTMLElement | Node | string | null;
   schema: DomilyRenderSchema<K, C, EK>;
-  obtainSchema: () => Partial<DomilyRenderSchema<K, C, EK>> & { tag: K };
   mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
   unmount: () => void;
+  update: () => void;
 }
 
 export type DOMily<ElementName extends string> = {
@@ -48,39 +49,42 @@ export function createDomily<
       C extends DOMilyChildren,
       EK extends DOMilyEventKeys
     >(schema: Partial<DomilyRenderSchema<K, C, EK>> & { tag: K }) {
-      const obtainSchema = () => DomilyRenderSchema.create<K, C, EK>(schema);
-      const domilyRenderSchema = obtainSchema();
-      const dom = domilyRenderSchema.render();
-      let mounted = false;
-      let container: HTMLElement | Document | ShadowRoot | null = null;
-      return {
-        dom,
-        schema: domilyRenderSchema,
-        obtainSchema,
-        mount: (
+      const domilySchema = DomilyRenderSchema.create<K, C, EK>(schema);
+      const domilySchemaProxy = new Proxy(domilySchema, {
+        set(target, p, newValue, receiver) {
+          const rs = Reflect.set(target, p, newValue, receiver);
+          console.log(`set ${String(p)}: ${newValue}`);
+          returnValue.dom = replaceDOM(returnValue.dom, domilySchema.render());
+          return rs;
+        },
+      });
+
+      const returnValue = {
+        dom: domilySchema.render(),
+        schema: domilySchemaProxy,
+        unmount: () => {},
+        mount(
           parent: HTMLElement | Document | ShadowRoot | string = document.body
-        ) => {
-          if (!dom) {
+        ) {
+          if (!this.dom) {
             return;
           }
-          container =
+          const container =
             typeof parent === "string"
               ? document.querySelector<HTMLElement>(parent)
               : parent;
           if (!container) {
             return;
           }
-          container.append(dom);
-          mounted = true;
-        },
-        unmount: () => {
-          if (!mounted || !container || !dom) {
-            return;
-          }
-          container.removeChild(dom);
-          mounted = false;
+          container.append(this.dom);
+          this.unmount = () => {
+            if (this.dom) container.removeChild(this.dom);
+            this.dom = null;
+          };
         },
       };
+
+      return returnValue;
     },
     registerElement<T extends string>(tag: T) {
       Reflect.set(

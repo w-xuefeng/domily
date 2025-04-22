@@ -257,9 +257,10 @@ export function h<K extends keyof HTMLElementTagNameMap>(
         });
       } else if (k === "style") {
         if (typeof v === "object" && v !== null) {
-          Object.entries(v).forEach(([sk, sv]) => {
-            Reflect.set(container.style, sk, sv);
-          });
+          const cssText = Object.entries(v)
+            .map(([sk, sv]) => `${sk}:${sv}`)
+            .join(";");
+          Reflect.set(container.style, "cssText", cssText);
         } else if (typeof v === "string") {
           Reflect.set(container.style, "cssText", v);
         }
@@ -275,4 +276,46 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     );
   }
   return container;
+}
+
+export function removeDOM(dom: HTMLElement | Node | ShadowRoot) {
+  if ("remove" in dom && typeof dom.remove === "function") {
+    dom.remove();
+    return;
+  }
+  if (dom && dom.parentNode) {
+    dom.parentNode.removeChild(dom);
+    return;
+  }
+  if ("outerHTML" in dom) {
+    dom.outerHTML = "";
+    return;
+  }
+  throw new Error("[DOMily] removeDOM is not supported in this environment");
+}
+
+export function replaceDOM(
+  original: HTMLElement | Node | ShadowRoot | null,
+  dom: HTMLElement | Node | ShadowRoot | null
+) {
+  if (!original) {
+    return dom;
+  }
+  if (!dom) {
+    removeDOM(original);
+    return dom;
+  }
+  if ("replaceWith" in original && typeof original.replaceWith === "function") {
+    original.replaceWith(dom);
+    return dom;
+  }
+  if (original && original.parentNode) {
+    original.parentNode.replaceChild(dom, original);
+    return dom;
+  }
+  if ("outerHTML" in original && "outerHTML" in dom) {
+    original.outerHTML = dom.outerHTML;
+    return dom;
+  }
+  throw new Error("[DOMily] replaceDOM is not supported in this environment");
 }

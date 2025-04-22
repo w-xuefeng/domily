@@ -7,7 +7,10 @@ export type DOMilyTags<ElementTagName = string> =
 export type DOMilyChildren =
   | (
       | DomilyRenderSchema<any, any, any>
-      | { schema: DomilyRenderSchema<any, any, any>; dom: DOMilyChildren }
+      | {
+          schema: DomilyRenderSchema<any, any, any>;
+          dom: HTMLElement | Node | string | null | undefined;
+        }
       | HTMLElement
       | Node
       | string
@@ -179,7 +182,16 @@ export default class DomilyRenderSchema<
       return null;
     }
 
-    const hidden = typeof this.domShow === "function" ? !this.domShow() : false;
+    if (typeof this.domIf === "boolean" && !this.domIf) {
+      return null;
+    }
+
+    const hidden =
+      typeof this.domShow === "function"
+        ? !this.domShow()
+        : typeof this.domShow === "boolean"
+        ? !this.domShow
+        : false;
 
     const children = (this.children
       ?.map((child) => {
