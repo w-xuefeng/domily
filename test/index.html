@@ -38,7 +38,7 @@
 
     const Domily = createDomily(testCustomElementTags)
     const abortController = new AbortController()
-
+    let count = 0
     const h1 = Domily.h1({
       text: '0',
       className: "title",
@@ -48,7 +48,8 @@
       },
       events: {
         click: () => {
-          h1.schema.text = Number(h1.schema.text) + 1;
+          count++;
+          h1.schema.html = `<span style="font-size:${count + 10}px">${count}</span>`;
         },
       }
     });

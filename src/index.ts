@@ -53,7 +53,6 @@ export function createDomily<
       const domilySchemaProxy = new Proxy(domilySchema, {
         set(target, p, newValue, receiver) {
           const rs = Reflect.set(target, p, newValue, receiver);
-          console.log(`set ${String(p)}: ${newValue}`);
           returnValue.dom = replaceDOM(returnValue.dom, domilySchema.render());
           return rs;
         },
