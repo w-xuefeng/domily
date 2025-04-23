@@ -1,14 +1,14 @@
 import { h } from "../../utils/dom";
+import { type WithCustomElementTagNameMap } from "../types/tags";
 
-export type DOMilyTags<ElementTagName = string> =
-  | (keyof HTMLElementTagNameMap | "text")
-  | ElementTagName;
+export type DOMilyTags<CustomElementMap = {}> =
+  keyof WithCustomElementTagNameMap<CustomElementMap>;
 
 export type DOMilyChildren =
   | (
-      | DomilyRenderSchema<any, any, any>
+      | DomilyRenderSchema<any, any>
       | {
-          schema: DomilyRenderSchema<any, any, any>;
+          schema: DomilyRenderSchema<any, any>;
           dom: HTMLElement | Node | string | null | undefined;
         }
       | HTMLElement
@@ -34,42 +34,61 @@ export type DOMilyEventListenerRecord<T extends DOMilyEventKeys> = Record<
     }
 >;
 
-export type DOMilyRenderSchemaPropsOrAttrs<K> = Record<
-  K extends keyof HTMLElementTagNameMap
-    ? keyof HTMLElementTagNameMap[K] | string
-    : string,
-  any
->;
+export type DOMilyRenderSchemaPropsOrAttrs<
+  CustomElementMap,
+  K extends DOMilyTags<CustomElementMap>
+> = Partial<
+  Record<keyof WithCustomElementTagNameMap<CustomElementMap>[K], any>
+> &
+  Record<string, any>;
 
-export default class DomilyRenderSchema<
-  K extends DOMilyTags,
-  C extends DOMilyChildren,
-  EK extends DOMilyEventKeys
+export interface IDomilyRenderSchema<
+  CustomElementMap = {},
+  K extends DOMilyTags<CustomElementMap> = DOMilyTags
 > {
   tag: K;
-  props?: DOMilyRenderSchemaPropsOrAttrs<K>;
-  attrs?: DOMilyRenderSchemaPropsOrAttrs<K>;
-  children?: C;
+  props?: DOMilyRenderSchemaPropsOrAttrs<CustomElementMap, K>;
+  attrs?: DOMilyRenderSchemaPropsOrAttrs<CustomElementMap, K>;
+  children?: DOMilyChildren;
   text?: string | number;
   html?: string;
   id?: string;
   className?: string;
-  style?: string | Record<string, any>;
-  events?: DOMilyEventListenerRecord<EK>;
+  style?: string | Partial<CSSStyleDeclaration>;
+  events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
-  childrenSchema: DomilyRenderSchema<any, any, any>[] = [];
-  eventsAbortController: Map<EK, AbortController> = new Map();
+}
+
+export default class DomilyRenderSchema<
+  CustomElementMap = {},
+  K extends DOMilyTags<CustomElementMap> = DOMilyTags
+> {
+  tag: K;
+  props?: DOMilyRenderSchemaPropsOrAttrs<CustomElementMap, K>;
+  attrs?: DOMilyRenderSchemaPropsOrAttrs<CustomElementMap, K>;
+  children?: DOMilyChildren;
+  text?: string | number;
+  html?: string;
+  id?: string;
+  className?: string;
+  style?: string | Partial<CSSStyleDeclaration>;
+  events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
+  domIf?: boolean | (() => boolean);
+  domShow?: boolean | (() => boolean);
+  childrenSchema: DomilyRenderSchema<any, any>[] = [];
+  eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
+  parentElement: HTMLElement | null = null;
+  nextSibling: Node | null = null;
 
   static create<
-    K extends DOMilyTags,
-    C extends DOMilyChildren = undefined,
-    EK extends DOMilyEventKeys = DOMilyEventKeys
-  >(schema: Partial<DomilyRenderSchema<K, C, EK>> & { tag: K }) {
-    return new DomilyRenderSchema<K, C, EK>(schema);
+    CustomElementMap = {},
+    K extends DOMilyTags<CustomElementMap> = DOMilyTags
+  >(schema: IDomilyRenderSchema<CustomElementMap, K>) {
+    return new DomilyRenderSchema<CustomElementMap, K>(schema);
   }
 
-  constructor(schema: Partial<DomilyRenderSchema<K, C, EK>> & { tag: K }) {
+  constructor(schema: IDomilyRenderSchema<CustomElementMap, K>) {
     this.tag = schema.tag;
     this.props = schema.props;
     this.attrs = schema.attrs;
@@ -99,16 +118,19 @@ export default class DomilyRenderSchema<
     } as AddEventListenerOptions;
   }
 
-  handleEvents(events?: DOMilyEventListenerRecord<EK>) {
+  handleEvents(events?: DOMilyEventListenerRecord<DOMilyEventKeys>) {
     if (!events) {
       return void 0;
     }
     return Object.fromEntries(
       Object.keys(events)
         .map((key) => {
-          const value = events[key as EK];
+          const value = events[key as DOMilyEventKeys];
           const abortController = new AbortController();
-          this.eventsAbortController.set(key as EK, abortController);
+          this.eventsAbortController.set(
+            key as DOMilyEventKeys,
+            abortController
+          );
           if (typeof value === "function") {
             return [
               key,
@@ -150,7 +172,7 @@ export default class DomilyRenderSchema<
           return [];
         })
         .filter((e) => e.length)
-    ) as DOMilyEventListenerRecord<EK>;
+    ) as DOMilyEventListenerRecord<DOMilyEventKeys>;
   }
 
   handleDIf(dIf?: boolean | (() => boolean)) {
@@ -175,6 +197,14 @@ export default class DomilyRenderSchema<
       }
       return show;
     };
+  }
+
+  handleDomLoadEvent(dom: HTMLElement | Node) {
+    window.addEventListener("DOMContentLoaded", () => {
+      this.parentElement = dom.parentElement;
+      this.nextSibling = dom.nextSibling;
+    });
+    return dom;
   }
 
   render(): HTMLElement | Node | null {
@@ -208,32 +238,40 @@ export default class DomilyRenderSchema<
           this.childrenSchema.push(child.schema);
           return child.dom;
         }
-        return new DomilyRenderSchema(child).render();
+        const childDomilyRenderSchema = new DomilyRenderSchema<any, any>(child);
+        this.childrenSchema.push(childDomilyRenderSchema);
+        return childDomilyRenderSchema.render();
       })
       .filter((e) => !!e) || []) as (HTMLElement | Node | string)[];
     if (this.tag === "text") {
-      return document.createTextNode(String(this.text ?? ""));
+      return this.handleDomLoadEvent(
+        document.createTextNode(String(this.text ?? ""))
+      );
     }
-    return h(
-      this.tag,
-      {
-        ...this.props,
-        ...(this.id ? { id: this.id } : {}),
-        ...(this.className ? { className: this.className } : {}),
-        ...(this.html
-          ? { innerHTML: this.html }
-          : this.text
-          ? { innerText: this.text }
-          : {}),
-        attrs: this.attrs,
-        style: hidden
-          ? typeof this.style === "string"
-            ? `${this.style};display:none!important;`
-            : { ...this.style, display: "none!important" }
-          : this.style,
-        on: this.events,
-      },
-      children
+
+    return this.handleDomLoadEvent(
+      // @ts-ignore
+      h(
+        this.tag as DOMilyTags,
+        {
+          ...this.props,
+          ...(this.id ? { id: this.id } : {}),
+          ...(this.className ? { className: this.className } : {}),
+          ...(this.html
+            ? { innerHTML: this.html }
+            : this.text
+            ? { innerText: this.text }
+            : {}),
+          attrs: this.attrs,
+          style: hidden
+            ? typeof this.style === "string"
+              ? `${this.style};display:none!important;`
+              : { ...this.style, display: "none!important" }
+            : this.style,
+          on: this.events,
+        },
+        children
+      )
     );
   }
 }

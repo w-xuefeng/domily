@@ -1,0 +1,46 @@
+export interface INodeNameMap {
+  text: Text;
+}
+
+export interface IElementTagNameMap
+  extends HTMLElementTagNameMap,
+    INodeNameMap {}
+
+export type WithCustomElementTagNameMap<CustomTagNameMap = {}> =
+  IElementTagNameMap & CustomTagNameMap;
+
+export type TDomilyRenderProperties<
+  C,
+  K extends keyof WithCustomElementTagNameMap<C>
+> = Record<string, any> &
+  Partial<Record<keyof WithCustomElementTagNameMap<C>[K], any>> & {
+    attrs?: Record<string, string>;
+    on?: Record<
+      string | keyof HTMLElementEventMap,
+      | EventListenerOrEventListenerObject
+      | {
+          event: EventListenerOrEventListenerObject;
+          option?: boolean | AddEventListenerOptions;
+        }
+    >;
+  };
+
+export type RecordConvertToHTMLElementMap<T extends Record<string, any>> = {
+  [K in keyof T]: T[K] extends new (...args: any) => infer R ? R : HTMLElement;
+};
+
+export type ArrayConvertToHTMLElementMap<T extends readonly string[]> = {
+  [K in T[number]]: HTMLElement;
+};
+
+export type OptionalWith<T, P, D> = P extends undefined
+  ? T
+  : P extends null
+  ? T
+  : D;
+
+export type CustomParamsToMap<P> = P extends readonly string[]
+  ? ArrayConvertToHTMLElementMap<P>
+  : P extends Record<string, any>
+  ? RecordConvertToHTMLElementMap<P>
+  : never;

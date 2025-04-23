@@ -1,4 +1,8 @@
-import { CustomElementTagName } from "./tags";
+import type {
+  WithCustomElementTagNameMap,
+  TDomilyRenderProperties,
+  IElementTagNameMap,
+} from "../core/types/tags";
 
 export function $<E extends Element = Element>(
   selector: string,
@@ -178,43 +182,18 @@ export function setCssVar(
   });
 }
 
-export function h<K extends keyof CustomElementTagName>(
+export function h<
+  CustomTagNameMap,
+  K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
+>(
   tagName: K,
-  properties?:
-    | (Partial<
-        Record<keyof HTMLElement | keyof CustomElementTagName[K], any>
-      > & {
-        attrs?: Record<string, string>;
-        on?: Record<
-          string | keyof HTMLElementEventMap,
-          | EventListenerOrEventListenerObject
-          | {
-              event: EventListenerOrEventListenerObject;
-              option?: boolean | AddEventListenerOptions;
-            }
-        >;
-        [k: string]: any;
-      })
-    | null,
+  properties?: TDomilyRenderProperties<CustomTagNameMap, K> | null,
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
-): CustomElementTagName[K];
+): WithCustomElementTagNameMap<CustomTagNameMap>[K];
 
 export function h<K extends keyof HTMLElementTagNameMap>(
   tagName: K,
-  properties?:
-    | (Partial<Record<keyof HTMLElement, any>> & {
-        attrs?: Record<string, string>;
-        on?: Record<
-          string | keyof HTMLElementEventMap,
-          | EventListenerOrEventListenerObject
-          | {
-              event: EventListenerOrEventListenerObject;
-              option?: boolean | AddEventListenerOptions;
-            }
-        >;
-        [k: string]: any;
-      })
-    | null,
+  properties?: TDomilyRenderProperties<IElementTagNameMap, K> | null,
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
 ) {
   const container = document.createElement<K>(tagName);

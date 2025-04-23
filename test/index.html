@@ -25,18 +25,12 @@
           super()
         }
         connectedCallback() {
-          this.innerHTML = "Test Element 1"
+          this.innerHTML = "Test Element 2"
         }
       },
     }
 
-    const testCustomElementTags = Object.keys(testCustomElements);
-
-    testCustomElementTags.forEach(e => {
-      customElements.define(e, testCustomElements[e])
-    })
-
-    const Domily = createDomily(testCustomElementTags)
+    const Domily = createDomily(testCustomElements)
     const abortController = new AbortController()
     let count = 0
     const h1 = Domily.h1({
@@ -45,17 +39,19 @@
       style: {
         color: "red",
         fontSize: "50px",
+        cursor: 'pointer'
       },
       events: {
         click: () => {
-          count++;
-          h1.schema.html = `<span style="font-size:${count + 10}px">${count}</span>`;
+          count += 5;
+          h1.schema.html = `<span style="font-size:${count < 40 ? count + 20 : count}px">${count}</span>`;
         },
       }
     });
 
     const p1 = Domily.p({
       domShow: true,
+      domIf: true,
       text: "This is a paragraph.",
       className: "paragraph",
     })
@@ -77,13 +73,32 @@
             color: "red",
           },
         }),
+        Domily.ul({
+          style: {
+            'margin-block': '10px',
+            outline: '2px dashed #f40'
+          },
+          children: new Array(10).fill(0).map((_, i) => Domily.li({
+            text: `item-${i + 1}`
+          }))
+        }),
         Domily.button({
           id: 'btn-1',
-          text: "button 1",
+          text: "button 1 - DOM Show",
           className: "button",
           events: {
             click: () => {
               p1.schema.domShow = !p1.schema.domShow;
+            },
+          },
+        }),
+        Domily.button({
+          id: 'btn-2',
+          text: "button 2 - DOM If",
+          className: "button",
+          events: {
+            click: () => {
+              p1.schema.domIf = !p1.schema.domIf;
             },
           },
         })
