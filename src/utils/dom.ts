@@ -345,7 +345,6 @@ export function proxyDomilySchema(
           );
         } else if (
           domilySchema.parentElement &&
-          domilySchema.index > -1 &&
           domilySchema.index >= domilySchema.parentElement.childNodes.length
         ) {
           domilySchema.parentElement.appendChild(nextDOM);
