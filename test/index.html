@@ -8,6 +8,7 @@
 </head>
 
 <body>
+  <div id="app"></div>
   <script type="module">
     import { createDomily } from "../lib/index.esm.js";
 
@@ -55,6 +56,47 @@
       text: "This is a paragraph.",
       className: "paragraph",
     })
+    const pf1 = Domily.p({
+      domShow: true,
+      domIf: true,
+      text: "This is a paragraph in fragment.",
+      className: "paragraph",
+    })
+    const d3 = Domily.div({
+      text: "d3",
+    })
+    const f = Domily.fragment([
+      {
+        tag: "div",
+        text: "d1",
+      },
+      {
+        tag: "div",
+        text: "d2",
+      },
+      d3,
+      pf1,
+      Domily.button({
+        id: 'f-btn-1',
+        text: "button 1 - DOM Show",
+        className: "button",
+        events: {
+          click: () => {
+            d3.schema.domShow = !d3.schema.domShow;
+          },
+        },
+      }),
+      Domily.button({
+        id: 'f-btn-2',
+        text: "button 1 - DOM Show",
+        className: "button",
+        events: {
+          click: () => {
+            d3.schema.domIf = !d3.schema.domIf;
+          },
+        },
+      }),
+    ]);
 
     const x = {
       className: "test",
@@ -99,13 +141,15 @@
           events: {
             click: () => {
               p1.schema.domIf = !p1.schema.domIf;
+              pf1.schema.domIf = !pf1.schema.domIf;
             },
           },
         })
       ],
     }
     const dom = Domily.div(x);
-    dom.mount();
+    f.mount('#app');
+    dom.mount('#app');
   </script>
 </body>
 

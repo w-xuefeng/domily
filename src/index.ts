@@ -7,7 +7,7 @@ import type {
   OptionalWith,
   CustomParamsToMap,
 } from "./core/types/tags";
-import { replaceDOM } from "./utils/dom";
+import { domMountToParent, f, noop, proxyDomilySchema } from "./utils/dom";
 import { HTMLElementTagName } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
@@ -27,10 +27,21 @@ export interface DOMilyReturnType<
   unmount: () => void;
 }
 
+export interface DOMilyFragmentReturnType {
+  dom: (HTMLElement | Node | null)[];
+  fragment: DocumentFragment;
+  schema: DomilyRenderSchema<any, any>[];
+  mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
+  unmount: () => void;
+}
+
 export type DOMilyBase<CustomTagNameMap = {}> = {
   render: <K extends DOMilyTags<CustomTagNameMap>>(
     schema: IDomilyRenderSchema<CustomTagNameMap, K>
   ) => DOMilyReturnType<CustomTagNameMap, K>;
+  fragment: (
+    children: (IDomilyRenderSchema<any, any> | DOMilyReturnType<any, any>)[]
+  ) => DOMilyFragmentReturnType;
   registerElement<T extends string>(
     tag: T,
     constructor?: CustomElementConstructor | undefined
@@ -51,64 +62,67 @@ function builtinDomily() {
   const Domily = {
     render<K extends DOMilyTags>(schema: IDomilyRenderSchema<{}, K>) {
       const domilySchema = DomilyRenderSchema.create<{}, K>(schema);
-      const domilySchemaProxy = new Proxy(domilySchema, {
-        set(target, p, newValue, receiver) {
-          const rs = Reflect.set(target, p, newValue, receiver);
-          const currentDOM = returnValue.dom;
-          const nextDOM = domilySchema.render();
-          if (currentDOM && nextDOM) {
-            /**
-             * modify
-             */
-            returnValue.dom = replaceDOM(currentDOM, nextDOM);
-          } else if (currentDOM && !nextDOM) {
-            /**
-             * remove
-             */
-            returnValue.dom = replaceDOM(currentDOM, nextDOM);
-          } else if (
-            !currentDOM &&
-            nextDOM &&
-            domilySchema.parentElement &&
-            domilySchema.nextSibling
-          ) {
-            /**
-             * insert (recover)
-             */
-            domilySchema.parentElement.insertBefore(
-              nextDOM,
-              domilySchema.nextSibling
-            );
-            returnValue.dom = nextDOM;
-          }
-          return rs;
-        },
-      });
-
       const returnValue = {
         dom: domilySchema.render(),
-        schema: domilySchemaProxy,
-        unmount: () => {},
+        schema: domilySchema,
+        unmount: noop,
         mount(
           parent: HTMLElement | Document | ShadowRoot | string = document.body
         ) {
-          if (!this.dom) {
-            return;
-          }
-          const container =
-            typeof parent === "string"
-              ? document.querySelector<HTMLElement>(parent)
-              : parent;
-          if (!container) {
-            return;
-          }
-          container.append(this.dom);
-          this.unmount = () => {
-            if (this.dom) container.removeChild(this.dom);
-            this.dom = null;
-          };
+          this.unmount = domMountToParent(this.dom, parent);
         },
       };
+      returnValue.schema = proxyDomilySchema(domilySchema, returnValue);
+      return returnValue;
+    },
+    fragment: (
+      children: (IDomilyRenderSchema<any, any> | DOMilyReturnType<any, any>)[]
+    ) => {
+      const domilyFragments = children.map((child) => {
+        if (
+          typeof child === "object" &&
+          child &&
+          "dom" in child &&
+          "schema" in child &&
+          typeof child.schema === "object"
+        ) {
+          return {
+            schema: child.schema,
+            dom: child.dom as HTMLElement | Node | null,
+          };
+        }
+        if (child instanceof DomilyRenderSchema) {
+          const node = {
+            schema: child,
+            dom: child.render(),
+          };
+          node.schema = proxyDomilySchema(child, node);
+          return node;
+        }
+        const schema = DomilyRenderSchema.create(
+          child as IDomilyRenderSchema<any, any>
+        );
+        const node = {
+          schema,
+          dom: schema.render(),
+        };
+        node.schema = proxyDomilySchema(schema, node);
+        return node;
+      });
+      const dom = domilyFragments.map((e) => e.dom);
+      const schema = domilyFragments.map((e) => e.schema);
+      const returnValue = {
+        fragment: f(dom),
+        dom,
+        schema,
+        unmount: noop,
+        mount(
+          parent: HTMLElement | Document | ShadowRoot | string = document.body
+        ) {
+          this.unmount = domMountToParent(this.fragment, parent);
+        },
+      };
+
       return returnValue;
     },
     registerElement<T extends string>(

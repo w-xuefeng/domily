@@ -1,8 +1,11 @@
+import DomilyRenderSchema from "../core/schemas/render";
 import type {
   WithCustomElementTagNameMap,
   TDomilyRenderProperties,
   IElementTagNameMap,
 } from "../core/types/tags";
+
+export const noop = () => {};
 
 export function $<E extends Element = Element>(
   selector: string,
@@ -182,6 +185,16 @@ export function setCssVar(
   });
 }
 
+export function f(children: (HTMLElement | Node | string | null)[] = []) {
+  const documentFragment = document.createDocumentFragment();
+  for (const child of children) {
+    if (child) {
+      documentFragment.append(child);
+    }
+  }
+  return documentFragment;
+}
+
 export function h<
   CustomTagNameMap,
   K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
@@ -249,12 +262,70 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     });
   }
   if (children) {
-    container.append.apply(
-      container,
-      Array.isArray(children) ? children : [children]
-    );
+    container.append(f(Array.isArray(children) ? children : [children]));
   }
   return container;
+}
+
+export function domMountToParent(
+  dom: HTMLElement | Node | null,
+  parent: HTMLElement | Document | ShadowRoot | string = document.body
+) {
+  if (!dom) {
+    return noop;
+  }
+  const container =
+    typeof parent === "string"
+      ? document.querySelector<HTMLElement>(parent)
+      : parent;
+  if (!container) {
+    return noop;
+  }
+  container.append(dom);
+  return () => {
+    if (dom) container.removeChild(dom);
+    dom = null;
+  };
+}
+
+export function proxyDomilySchema(
+  domilySchema: DomilyRenderSchema<any, any>,
+  targetObject: { dom: HTMLElement | Node | null }
+) {
+  const domilySchemaProxy = new Proxy(domilySchema, {
+    set(target, p, newValue, receiver) {
+      const rs = Reflect.set(target, p, newValue, receiver);
+      const currentDOM = targetObject.dom;
+      const nextDOM = domilySchema.render();
+      if (currentDOM && nextDOM) {
+        /**
+         * modify
+         */
+        targetObject.dom = replaceDOM(currentDOM, nextDOM);
+      } else if (currentDOM && !nextDOM) {
+        /**
+         * remove
+         */
+        targetObject.dom = replaceDOM(currentDOM, nextDOM);
+      } else if (
+        !currentDOM &&
+        nextDOM &&
+        domilySchema.parentElement &&
+        domilySchema.nextSibling
+      ) {
+        /**
+         * insert (recover)
+         */
+        domilySchema.parentElement.insertBefore(
+          nextDOM,
+          domilySchema.nextSibling
+        );
+        targetObject.dom = nextDOM;
+      }
+      return rs;
+    },
+  });
+  return domilySchemaProxy;
 }
 
 export function removeDOM(dom: HTMLElement | Node | ShadowRoot) {
