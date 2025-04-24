@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/config/index.ts","./src/core/schemas/render.ts","./src/core/types/tags.ts","./src/utils/dom.ts","./src/utils/tags.ts"],"version":"5.8.3"}
+{"root":["./src/index.ts","./src/config/index.ts","./src/core/schemas/render.ts","./src/core/types/tags.ts","./src/utils/dom.ts","./src/utils/event-bus.ts","./src/utils/tags.ts"],"version":"5.8.3"}

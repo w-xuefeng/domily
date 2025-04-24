@@ -1,4 +1,4 @@
-import { h } from "../../utils/dom";
+import { c, h } from "../../utils/dom";
 import type {
   TDomilyRenderProperties,
   WithCustomElementTagNameMap,
@@ -6,22 +6,6 @@ import type {
 
 export type DOMilyTags<CustomElementMap = {}> =
   keyof WithCustomElementTagNameMap<CustomElementMap>;
-
-export type DOMilyChildren =
-  | (
-      | DomilyRenderSchema<any, any>
-      | {
-          schema: DomilyRenderSchema<any, any>;
-          dom: HTMLElement | Node | string | null | undefined;
-        }
-      | HTMLElement
-      | Node
-      | string
-      | null
-      | undefined
-    )[]
-  | undefined
-  | null;
 
 export type DOMilyEventKeys = keyof HTMLElementEventMap | string;
 
@@ -44,6 +28,28 @@ export type DOMilyRenderSchemaPropsOrAttrs<
   Record<keyof WithCustomElementTagNameMap<CustomElementMap>[K], any>
 > &
   Record<string, any>;
+
+export type DOMilyChildren =
+  | (
+      | DomilyRenderSchema<any, any>
+      | IDomilyRenderSchema<any, any>
+      | {
+          schema: DomilyRenderSchema<any, any>;
+          dom: HTMLElement | Node | string | null | undefined;
+        }
+      | {
+          fragment: DocumentFragment;
+          dom: (HTMLElement | Node | null)[];
+          schema: DomilyRenderSchema<any, any>[];
+        }
+      | HTMLElement
+      | Node
+      | string
+      | null
+      | undefined
+    )[]
+  | undefined
+  | null;
 
 export interface IDomilyRenderSchema<
   CustomElementMap = {},
@@ -83,7 +89,7 @@ export default class DomilyRenderSchema<
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
   parentElement: HTMLElement | null = null;
   nextSibling: Node | null = null;
-  index: number = -1;
+  previousSibling: Node | null = null;
 
   static create<
     CustomElementMap = {},
@@ -203,24 +209,36 @@ export default class DomilyRenderSchema<
     };
   }
 
+  snapshotDOMPosition(dom: HTMLElement | Node) {
+    this.parentElement = dom.parentElement;
+    this.nextSibling = dom.nextSibling;
+    this.previousSibling = dom.previousSibling;
+  }
+
   handleDomLoadEvent(dom: HTMLElement | Node) {
     window.addEventListener("DOMContentLoaded", () => {
-      this.parentElement = dom.parentElement;
-      this.nextSibling = dom.nextSibling;
-      this.index = Array.from(dom.parentElement?.childNodes || []).indexOf(
-        dom as ChildNode
-      );
+      this.snapshotDOMPosition(dom);
     });
     return dom;
   }
 
   render(): HTMLElement | Node | null {
     if (typeof this.domIf === "function" && !this.domIf()) {
-      return null;
+      return c("dom-if");
     }
 
     if (typeof this.domIf === "boolean" && !this.domIf) {
-      return null;
+      return c("dom-if");
+    }
+
+    if (this.tag === "text") {
+      return this.handleDomLoadEvent(
+        document.createTextNode(String(this.text ?? ""))
+      );
+    }
+
+    if (this.tag === "comment") {
+      return this.handleDomLoadEvent(c(String(this.text ?? "comment node")));
     }
 
     const hidden =
@@ -241,20 +259,34 @@ export default class DomilyRenderSchema<
         if (typeof child === "string") {
           return document.createTextNode(child);
         }
-        if (typeof child === "object" && "schema" in child && "dom" in child) {
+        if (
+          typeof child === "object" &&
+          "schema" in child &&
+          "dom" in child &&
+          "fragment" in child &&
+          child.fragment &&
+          Array.isArray(child.dom) &&
+          Array.isArray(child.schema)
+        ) {
+          child.schema.forEach((e) => this.childrenSchema.push(e));
+          return child.fragment;
+        }
+        if (
+          typeof child === "object" &&
+          "schema" in child &&
+          "dom" in child &&
+          !Array.isArray(child.schema)
+        ) {
           this.childrenSchema.push(child.schema);
           return child.dom;
         }
-        const childDomilyRenderSchema = new DomilyRenderSchema<any, any>(child);
+        const childDomilyRenderSchema = new DomilyRenderSchema<any, any>(
+          child as IDomilyRenderSchema<any, any>
+        );
         this.childrenSchema.push(childDomilyRenderSchema);
         return childDomilyRenderSchema.render();
       })
       .filter((e) => !!e) || []) as (HTMLElement | Node | string)[];
-    if (this.tag === "text") {
-      return this.handleDomLoadEvent(
-        document.createTextNode(String(this.text ?? ""))
-      );
-    }
 
     return this.handleDomLoadEvent(
       h<CustomElementMap, K>(

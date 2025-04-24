@@ -1,5 +1,6 @@
 export interface INodeNameMap {
   text: Text;
+  comment: Comment;
 }
 
 export interface IElementTagNameMap

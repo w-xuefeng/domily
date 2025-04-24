@@ -1,5 +1,6 @@
-export const HTMLElementTagName = {
+export const HTMLNodeNameMap = {
   text: Text,
+  comment: Comment,
   a: HTMLAnchorElement,
   abbr: HTMLElement,
   address: HTMLElement,

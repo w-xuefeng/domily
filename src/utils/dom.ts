@@ -195,6 +195,11 @@ export function f(children: (HTMLElement | Node | string | null)[] = []) {
   return documentFragment;
 }
 
+export function c(data: string) {
+  const comment = document.createComment(data);
+  return comment;
+}
+
 export function h<
   CustomTagNameMap,
   K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
@@ -311,46 +316,57 @@ export function proxyDomilySchema(
       }
       const currentDOM = targetObject.dom;
       const nextDOM = domilySchema.render();
-      if (currentDOM && nextDOM) {
-        /**
-         * modify
-         */
-        targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      } else if (currentDOM && !nextDOM) {
-        /**
-         * remove
-         */
-        targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      } else if (!currentDOM && nextDOM) {
-        /**
-         * insert (recover)
-         */
-        if (
-          domilySchema.parentElement &&
-          domilySchema.nextSibling &&
-          domilySchema.parentElement.contains(domilySchema.nextSibling)
-        ) {
-          domilySchema.parentElement.insertBefore(
-            nextDOM,
-            domilySchema.nextSibling
-          );
-        } else if (
-          domilySchema.parentElement &&
-          domilySchema.index > -1 &&
-          domilySchema.index < domilySchema.parentElement.childNodes.length
-        ) {
-          domilySchema.parentElement.insertBefore(
-            nextDOM,
-            domilySchema.parentElement.childNodes[domilySchema.index]
-          );
-        } else if (
-          domilySchema.parentElement &&
-          domilySchema.index >= domilySchema.parentElement.childNodes.length
-        ) {
-          domilySchema.parentElement.appendChild(nextDOM);
-        }
-        targetObject.dom = nextDOM;
-      }
+      targetObject.dom = replaceDOM(currentDOM, nextDOM);
+      // if (currentDOM && nextDOM) {
+      //   /**
+      //    * modify
+      //    */
+      //   targetObject.dom = replaceDOM(currentDOM, nextDOM);
+      // } else if (currentDOM && !nextDOM) {
+      //   /**
+      //    * remove
+      //    */
+      //   // eventBus.emit(EVENTS.DOM_SNAPSHOT, currentDOM.parentElement);
+      //   targetObject.dom = replaceDOM(currentDOM, nextDOM);
+      // } else if (!currentDOM && nextDOM) {
+      //   /**
+      //    * insert (recover)
+      //    */
+      //   if (
+      //     domilySchema.parentElement &&
+      //     domilySchema.nextSibling &&
+      //     domilySchema.parentElement.contains(domilySchema.nextSibling)
+      //   ) {
+      //     domilySchema.parentElement.insertBefore(
+      //       nextDOM,
+      //       domilySchema.nextSibling
+      //     );
+      //   } else if (
+      //     domilySchema.parentElement &&
+      //     domilySchema.previousSibling &&
+      //     domilySchema.parentElement.contains(domilySchema.previousSibling)
+      //   ) {
+      //     domilySchema.parentElement.insertBefore(
+      //       nextDOM,
+      //       domilySchema.previousSibling.nextSibling
+      //     );
+      //   } else if (
+      //     domilySchema.parentElement &&
+      //     domilySchema.index > -1 &&
+      //     domilySchema.index < domilySchema.parentElement.childNodes.length
+      //   ) {
+      //     domilySchema.parentElement.insertBefore(
+      //       nextDOM,
+      //       domilySchema.parentElement.childNodes[domilySchema.index]
+      //     );
+      //   } else if (
+      //     domilySchema.parentElement &&
+      //     domilySchema.index >= domilySchema.parentElement.childNodes.length
+      //   ) {
+      //     domilySchema.parentElement.appendChild(nextDOM);
+      //   }
+      //   targetObject.dom = nextDOM;
+      // }
       return rs;
     },
   });

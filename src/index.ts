@@ -8,7 +8,7 @@ import type {
   CustomParamsToMap,
 } from "./core/types/tags";
 import { domMountToParent, f, noop, proxyDomilySchema } from "./utils/dom";
-import { HTMLElementTagName } from "./utils/tags";
+import { HTMLNodeNameMap } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
 export * from "./core/schemas/render";
@@ -20,7 +20,7 @@ export interface DOMilyReturnType<
   dom:
     | (K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
         ? WithCustomElementTagNameMap<CustomTagNameMap>[K]
-        : HTMLElement | Node | Text)
+        : HTMLElement | Node)
     | null;
   schema: DomilyRenderSchema<CustomTagNameMap, K>;
   mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
@@ -138,7 +138,7 @@ function builtinDomily() {
       return Domily;
     },
   };
-  Object.keys(HTMLElementTagName).forEach((tag) => {
+  Object.keys(HTMLNodeNameMap).forEach((tag) => {
     Domily.registerElement(tag);
   });
   return Domily as unknown as DOMily;
