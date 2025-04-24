@@ -57,10 +57,14 @@ function builtinDomily() {
           const currentDOM = returnValue.dom;
           const nextDOM = domilySchema.render();
           if (currentDOM && nextDOM) {
-            // modify
+            /**
+             * modify
+             */
             returnValue.dom = replaceDOM(currentDOM, nextDOM);
           } else if (currentDOM && !nextDOM) {
-            // remove
+            /**
+             * remove
+             */
             returnValue.dom = replaceDOM(currentDOM, nextDOM);
           } else if (
             !currentDOM &&
@@ -68,7 +72,9 @@ function builtinDomily() {
             domilySchema.parentElement &&
             domilySchema.nextSibling
           ) {
-            // insert
+            /**
+             * insert (recover)
+             */
             domilySchema.parentElement.insertBefore(
               nextDOM,
               domilySchema.nextSibling
@@ -121,8 +127,7 @@ function builtinDomily() {
   Object.keys(HTMLElementTagName).forEach((tag) => {
     Domily.registerElement(tag);
   });
-  // @ts-ignore
-  return Domily as DOMily;
+  return Domily as unknown as DOMily;
 }
 
 function registerCustomElements<T extends DOMily, P extends string[] | object>(

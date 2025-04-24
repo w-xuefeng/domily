@@ -1,5 +1,8 @@
 import { h } from "../../utils/dom";
-import { type WithCustomElementTagNameMap } from "../types/tags";
+import type {
+  TDomilyRenderProperties,
+  WithCustomElementTagNameMap,
+} from "../types/tags";
 
 export type DOMilyTags<CustomElementMap = {}> =
   keyof WithCustomElementTagNameMap<CustomElementMap>;
@@ -250,9 +253,8 @@ export default class DomilyRenderSchema<
     }
 
     return this.handleDomLoadEvent(
-      // @ts-ignore
-      h(
-        this.tag as DOMilyTags,
+      h<CustomElementMap, K>(
+        this.tag,
         {
           ...this.props,
           ...(this.id ? { id: this.id } : {}),
@@ -269,9 +271,9 @@ export default class DomilyRenderSchema<
               : { ...this.style, display: "none!important" }
             : this.style,
           on: this.events,
-        },
+        } as unknown as TDomilyRenderProperties<CustomElementMap, K>,
         children
-      )
+      ) as HTMLElement
     );
   }
 }

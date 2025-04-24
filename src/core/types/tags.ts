@@ -7,7 +7,9 @@ export interface IElementTagNameMap
     INodeNameMap {}
 
 export type WithCustomElementTagNameMap<CustomTagNameMap = {}> =
-  IElementTagNameMap & CustomTagNameMap;
+  CustomTagNameMap extends Record<string, HTMLElement>
+    ? IElementTagNameMap & CustomTagNameMap
+    : IElementTagNameMap;
 
 export type TDomilyRenderProperties<
   C,
