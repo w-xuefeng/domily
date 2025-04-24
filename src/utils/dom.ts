@@ -292,9 +292,23 @@ export function proxyDomilySchema(
   domilySchema: DomilyRenderSchema<any, any>,
   targetObject: { dom: HTMLElement | Node | null }
 ) {
+  const proxyKeys = [
+    "props",
+    "attrs",
+    "text",
+    "html",
+    "id",
+    "className",
+    "style",
+    "domIf",
+    "domShow",
+  ];
   const domilySchemaProxy = new Proxy(domilySchema, {
     set(target, p, newValue, receiver) {
       const rs = Reflect.set(target, p, newValue, receiver);
+      if (!proxyKeys.includes(p as string)) {
+        return rs;
+      }
       const currentDOM = targetObject.dom;
       const nextDOM = domilySchema.render();
       if (currentDOM && nextDOM) {
@@ -307,19 +321,35 @@ export function proxyDomilySchema(
          * remove
          */
         targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      } else if (
-        !currentDOM &&
-        nextDOM &&
-        domilySchema.parentElement &&
-        domilySchema.nextSibling
-      ) {
+      } else if (!currentDOM && nextDOM) {
         /**
          * insert (recover)
          */
-        domilySchema.parentElement.insertBefore(
-          nextDOM,
-          domilySchema.nextSibling
-        );
+        if (
+          domilySchema.parentElement &&
+          domilySchema.nextSibling &&
+          domilySchema.parentElement.contains(domilySchema.nextSibling)
+        ) {
+          domilySchema.parentElement.insertBefore(
+            nextDOM,
+            domilySchema.nextSibling
+          );
+        } else if (
+          domilySchema.parentElement &&
+          domilySchema.index > -1 &&
+          domilySchema.index < domilySchema.parentElement.childNodes.length
+        ) {
+          domilySchema.parentElement.insertBefore(
+            nextDOM,
+            domilySchema.parentElement.childNodes[domilySchema.index]
+          );
+        } else if (
+          domilySchema.parentElement &&
+          domilySchema.index > -1 &&
+          domilySchema.index >= domilySchema.parentElement.childNodes.length
+        ) {
+          domilySchema.parentElement.appendChild(nextDOM);
+        }
         targetObject.dom = nextDOM;
       }
       return rs;

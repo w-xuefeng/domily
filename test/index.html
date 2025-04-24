@@ -14,19 +14,27 @@
 
     const testCustomElements = {
       'test-element-1': class TestElement extends HTMLElement {
+        shadowRoot;
         constructor() {
           super()
+          this.shadowRoot = this.attachShadow({ mode: 'closed' })
         }
         connectedCallback() {
-          this.innerHTML = "Test Element 1"
+          const div = document.createElement('div')
+          div.append('Test Element 1')
+          this.shadowRoot.appendChild(div)
         }
       },
       'test-element-2': class TestElement extends HTMLElement {
+        shadowRoot;
         constructor() {
           super()
+          this.shadowRoot = this.attachShadow({ mode: 'open' })
         }
         connectedCallback() {
-          this.innerHTML = "Test Element 2"
+          const div = document.createElement('div')
+          div.append("Test Element 2")
+          this.shadowRoot.appendChild(div)
         }
       },
     }
@@ -66,6 +74,13 @@
       text: "d3",
     })
     const f = Domily.fragment([
+      Domily.text({
+        text: 'text'
+      }),
+      {
+        tag: 'text',
+        text: '1245789'
+      },
       {
         tag: "div",
         text: "d1",

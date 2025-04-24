@@ -83,6 +83,7 @@ export default class DomilyRenderSchema<
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
   parentElement: HTMLElement | null = null;
   nextSibling: Node | null = null;
+  index: number = -1;
 
   static create<
     CustomElementMap = {},
@@ -206,6 +207,9 @@ export default class DomilyRenderSchema<
     window.addEventListener("DOMContentLoaded", () => {
       this.parentElement = dom.parentElement;
       this.nextSibling = dom.nextSibling;
+      this.index = Array.from(dom.parentElement?.childNodes || []).indexOf(
+        dom as ChildNode
+      );
     });
     return dom;
   }
