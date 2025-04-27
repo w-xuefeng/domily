@@ -304,6 +304,13 @@ export default class DomilyRenderSchema<
       return this.handleDomLoadEvent(c(String(this.text ?? "comment node")));
     }
 
+    if (this.tag === "fragment" && this.children) {
+      const children = (
+        Array.isArray(this.children) ? this.children : [this.children]
+      ).filter((e) => !!e) as Parameters<typeof fragment>[0];
+      return this.handleDomLoadEvent(fragment(children).fragment);
+    }
+
     const css = this.handleCSS();
 
     const hidden =

@@ -1,6 +1,7 @@
 export interface INodeNameMap {
   text: Text;
   comment: Comment;
+  fragment: DocumentFragment;
 }
 
 export type TSvgElementNameMap = {
