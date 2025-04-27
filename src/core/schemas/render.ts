@@ -21,6 +21,11 @@ export type DOMilyEventListenerRecord<T extends DOMilyEventKeys> = Record<
     }
 >;
 
+export interface DOMilyCascadingStyleSheets
+  extends Record<string, Partial<CSSStyleDeclaration>> {
+  [k: string]: Record<string, any>;
+}
+
 export type DOMilyRenderSchemaPropsOrAttrs<
   CustomElementMap,
   K extends DOMilyTags<CustomElementMap>
@@ -62,6 +67,7 @@ export interface IDomilyRenderSchema<
   text?: string | number;
   html?: string;
   id?: string;
+  css?: DOMilyCascadingStyleSheets;
   className?: string;
   style?: string | Partial<CSSStyleDeclaration>;
   events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
@@ -102,6 +108,7 @@ export default class DomilyRenderSchema<
   text?: string | number;
   html?: string;
   id?: string;
+  css?: DOMilyCascadingStyleSheets;
   className?: string;
   style?: string | Partial<CSSStyleDeclaration>;
   events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
@@ -128,6 +135,7 @@ export default class DomilyRenderSchema<
     this.text = schema.text;
     this.html = schema.html;
     this.id = schema.id;
+    this.css = schema.css;
     this.className = schema.className;
     this.style = schema.style;
     this.events = this.handleEvents(schema.events);
@@ -244,6 +252,39 @@ export default class DomilyRenderSchema<
     return dom;
   }
 
+  handleCSS() {
+    if (!this.css) {
+      return;
+    }
+    const selectors = Object.keys(this.css);
+    if (!selectors.length) {
+      return;
+    }
+
+    function objectToCSS(properties: Record<string, any>) {
+      let cssString = "";
+      for (const [prop, value] of Object.entries(properties)) {
+        if (typeof value === "string") {
+          const cssProperty = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+          cssString += `${cssProperty}: ${value};`;
+        }
+        if (typeof value === "object") {
+          cssString += `${prop} {${objectToCSS(value)}}`;
+        }
+      }
+      return cssString.trim();
+    }
+
+    function jsonToCSS(cssRecord: DOMilyCascadingStyleSheets): string {
+      let cssString = "";
+      for (const [selector, properties] of Object.entries(cssRecord)) {
+        cssString += `${selector} {${objectToCSS(properties)}}`;
+      }
+      return cssString.trim();
+    }
+    return h("style", null, document.createTextNode(jsonToCSS(this.css)));
+  }
+
   render(): HTMLElement | Node | null {
     if (typeof this.domIf === "function" && !this.domIf()) {
       return c("dom-if");
@@ -262,6 +303,8 @@ export default class DomilyRenderSchema<
     if (this.tag === "comment") {
       return this.handleDomLoadEvent(c(String(this.text ?? "comment node")));
     }
+
+    const css = this.handleCSS();
 
     const hidden =
       typeof this.domShow === "function"
@@ -309,6 +352,10 @@ export default class DomilyRenderSchema<
         return childDomilyRenderSchema.render();
       })
       .filter((e) => !!e) || []) as (HTMLElement | Node | string)[];
+
+    if (css) {
+      children.unshift(css);
+    }
 
     return this.handleDomLoadEvent(
       h<CustomElementMap, K>(
