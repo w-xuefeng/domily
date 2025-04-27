@@ -3,8 +3,17 @@ export interface INodeNameMap {
   comment: Comment;
 }
 
+export type TSvgElementNameMap = {
+  [K in `SVG:${keyof SVGElementTagNameMap}`]: SVGElementTagNameMap[K extends `SVG:${infer R}`
+    ? R
+    : never];
+} & {
+  svg: SVGSVGElement;
+};
+
 export interface IElementTagNameMap
   extends HTMLElementTagNameMap,
+    TSvgElementNameMap,
     INodeNameMap {}
 
 export type WithCustomElementTagNameMap<CustomTagNameMap = {}> =
@@ -27,6 +36,20 @@ export type TDomilyRenderProperties<
         }
     >;
   };
+
+export type TDomilyRenderSVGProperties<K extends keyof SVGElementTagNameMap> =
+  Record<string, any> &
+    Partial<Record<keyof SVGElementTagNameMap[K], any>> & {
+      attrs?: Record<string, string>;
+      on?: Record<
+        string | keyof HTMLElementEventMap,
+        | EventListenerOrEventListenerObject
+        | {
+            event: EventListenerOrEventListenerObject;
+            option?: boolean | AddEventListenerOptions;
+          }
+      >;
+    };
 
 export type RecordConvertToHTMLElementMap<T extends Record<string, any>> = {
   [K in keyof T]: T[K] extends new (...args: any) => infer R ? R : HTMLElement;

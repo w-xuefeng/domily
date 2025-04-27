@@ -2,6 +2,7 @@
   "compilerOptions": {
     "composite": true,
     "skipLibCheck": true,
+    "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
@@ -23,6 +24,8 @@
   },
   "include": [
     "./src/**/*.ts",
-    "./test/**/*.ts"
+    "./test/**/*.ts",
+    "test/component.js",
+    "test/main.js"
   ]
 }

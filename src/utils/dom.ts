@@ -2,10 +2,11 @@ import DomilyRenderSchema from "../core/schemas/render";
 import type {
   WithCustomElementTagNameMap,
   TDomilyRenderProperties,
-  IElementTagNameMap,
+  TSvgElementNameMap,
 } from "../core/types/tags";
 
 export const noop = () => {};
+export const svgNamespace = "http://www.w3.org/2000/svg" as const;
 
 export function $<E extends Element = Element>(
   selector: string,
@@ -19,6 +20,15 @@ export function $$<E extends Element = Element>(
   container: HTMLElement | Document = document
 ) {
   return Array.from(container.querySelectorAll<E>(selector));
+}
+
+export function $el<E extends Element = Element>(
+  selector?: string | HTMLElement | Document | ShadowRoot,
+  container: HTMLElement | Document = document
+) {
+  return typeof selector === "string"
+    ? container.querySelector<E>(selector)
+    : selector;
 }
 
 export function $item<E extends Element = Element>(
@@ -185,6 +195,13 @@ export function setCssVar(
   });
 }
 
+export function camelToKebab(str: string): string {
+  return str
+    .replace(/([A-Z])/g, "-$1")
+    .toLowerCase()
+    .replace(/^-/, "");
+}
+
 export function f(children: (HTMLElement | Node | string | null)[] = []) {
   const documentFragment = document.createDocumentFragment();
   for (const child of children) {
@@ -200,24 +217,20 @@ export function c(data: string) {
   return comment;
 }
 
-export function h<
-  CustomTagNameMap,
-  K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
->(
-  tagName: K,
-  properties?: TDomilyRenderProperties<CustomTagNameMap, K> | null,
-  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
-): WithCustomElementTagNameMap<CustomTagNameMap>[K];
-
-export function h<K extends keyof HTMLElementTagNameMap>(
-  tagName: K,
-  properties?: TDomilyRenderProperties<IElementTagNameMap, K> | null,
-  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+export function internalCreateElement<P>(
+  creatorElement: (() => SVGElement) | (() => HTMLElement),
+  properties?: P,
+  children?:
+    | (HTMLElement | Element | Node | string)[]
+    | string
+    | Element
+    | HTMLElement
+    | Node
 ) {
-  const container = document.createElement<K>(tagName);
+  const container = creatorElement();
   if (properties) {
     Object.entries(properties).forEach(([k, v]) => {
-      if (k === "arrts" && typeof v === "object" && v !== null) {
+      if (k === "attrs" && typeof v === "object" && v !== null) {
         Object.entries(v as Record<string, string>).forEach(([ak, av]) => {
           container.setAttribute(ak, av);
         });
@@ -255,13 +268,13 @@ export function h<K extends keyof HTMLElementTagNameMap>(
       } else if (k === "style") {
         if (typeof v === "object" && v !== null) {
           const cssText = Object.entries(v)
-            .map(([sk, sv]) => `${sk}:${sv}`)
+            .map(([sk, sv]) => `${camelToKebab(sk)}:${sv}`)
             .join(";");
           Reflect.set(container.style, "cssText", cssText);
         } else if (typeof v === "string") {
           Reflect.set(container.style, "cssText", v);
         }
-      } else if (k !== "arrts" && k !== "on" && k !== "style") {
+      } else if (k !== "attrs" && k !== "on" && k !== "style") {
         Reflect.set(container, k, v);
       }
     });
@@ -270,6 +283,35 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     container.append(f(Array.isArray(children) ? children : [children]));
   }
   return container;
+}
+
+export function isSvgTag<K extends keyof WithCustomElementTagNameMap>(
+  tagName: K
+) {
+  return tagName === "svg" || tagName.startsWith("SVG:");
+}
+
+export function h<
+  CustomTagNameMap,
+  K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
+>(
+  tagName: K,
+  properties?: TDomilyRenderProperties<CustomTagNameMap, K> | null,
+  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+): WithCustomElementTagNameMap<CustomTagNameMap>[K];
+
+export function h<K extends keyof (TSvgElementNameMap & HTMLElementTagNameMap)>(
+  tagName: K,
+  properties?: TDomilyRenderProperties<
+    TSvgElementNameMap & HTMLElementTagNameMap,
+    K
+  > | null,
+  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+) {
+  const creator = isSvgTag(tagName)
+    ? () => document.createElementNS(svgNamespace, tagName.replace(/^SVG:/, ""))
+    : () => document.createElement(tagName);
+  return internalCreateElement(creator, properties, children);
 }
 
 export function domMountToParent(
@@ -413,4 +455,19 @@ export function replaceDOM(
     return dom;
   }
   throw new Error("[DOMily] replaceDOM is not supported in this environment");
+}
+
+export function mountable<
+  K extends string,
+  T extends { [k in K]: HTMLElement | Node | null }
+>(data: T, domKey = "dom" as K) {
+  return {
+    ...data,
+    unmount: noop,
+    mount(
+      parent: HTMLElement | Document | ShadowRoot | string = document.body
+    ) {
+      this.unmount = domMountToParent(data[domKey], parent);
+    },
+  };
 }

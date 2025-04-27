@@ -27,10 +27,17 @@ class EventBus extends HTMLElement {
     this.addEventListener(
       eventName,
       callback,
-      Object.assign({}, typeof options === "object" ? options : {}, {
-        once: true,
-        capture: typeof options === "boolean" ? options : options?.capture,
-      })
+      Object.assign(
+        {},
+        typeof options === "object"
+          ? options
+          : {
+              capture: options,
+            },
+        {
+          once: true,
+        }
+      )
     );
   }
 

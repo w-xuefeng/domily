@@ -1,4 +1,4 @@
-import { c, h } from "../../utils/dom";
+import { c, f, h, proxyDomilySchema, mountable } from "../../utils/dom";
 import type {
   TDomilyRenderProperties,
   WithCustomElementTagNameMap,
@@ -67,6 +67,28 @@ export interface IDomilyRenderSchema<
   events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
+}
+
+export interface DOMilyRenderReturnType<
+  CustomTagNameMap,
+  K extends DOMilyTags<CustomTagNameMap>
+> {
+  dom:
+    | (K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
+        ? WithCustomElementTagNameMap<CustomTagNameMap>[K]
+        : HTMLElement | Node)
+    | null;
+  schema: DomilyRenderSchema<CustomTagNameMap, K>;
+  mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
+  unmount: () => void;
+}
+
+export interface DOMilyFragmentReturnType {
+  dom: (HTMLElement | Node | null)[];
+  fragment: DocumentFragment;
+  schema: DomilyRenderSchema<any, any>[];
+  mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
+  unmount: () => void;
 }
 
 export default class DomilyRenderSchema<
@@ -312,4 +334,66 @@ export default class DomilyRenderSchema<
       ) as HTMLElement
     );
   }
+}
+
+export function render<K extends DOMilyTags>(
+  schema: IDomilyRenderSchema<{}, K>
+) {
+  const domilySchema = DomilyRenderSchema.create<{}, K>(schema);
+  const returnValue = mountable(
+    {
+      dom: domilySchema.render(),
+      schema: domilySchema,
+    },
+    "dom"
+  );
+  returnValue.schema = proxyDomilySchema(domilySchema, returnValue);
+  return returnValue;
+}
+
+export function fragment(
+  children: (IDomilyRenderSchema<any, any> | DOMilyRenderReturnType<any, any>)[]
+) {
+  const domilyFragments = children.map((child) => {
+    if (
+      typeof child === "object" &&
+      child &&
+      "dom" in child &&
+      "schema" in child &&
+      typeof child.schema === "object"
+    ) {
+      return {
+        schema: child.schema,
+        dom: child.dom as HTMLElement | Node | null,
+      };
+    }
+    if (child instanceof DomilyRenderSchema) {
+      const node = {
+        schema: child,
+        dom: child.render(),
+      };
+      node.schema = proxyDomilySchema(child, node);
+      return node;
+    }
+    const schema = DomilyRenderSchema.create(
+      child as IDomilyRenderSchema<any, any>
+    );
+    const node = {
+      schema,
+      dom: schema.render(),
+    };
+    node.schema = proxyDomilySchema(schema, node);
+    return node;
+  });
+  const dom = domilyFragments.map((e) => e.dom);
+  const schema = domilyFragments.map((e) => e.schema);
+  const returnValue = mountable(
+    {
+      fragment: f(dom),
+      dom,
+      schema,
+    },
+    "fragment"
+  );
+  return returnValue;
 }
