@@ -19,6 +19,9 @@ import { HTMLNodeNameMap, SVGElementNameMap } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
 export * from "./core/schemas/render";
+export * from "./core/schemas/component";
+export * from "./core/schemas/app";
+export * from "./core/schemas/page";
 
 export type DOMilyBase<CustomTagNameMap = {}> = {
   app<GlobalProperties extends Record<string, any> = Record<string, any>>(
