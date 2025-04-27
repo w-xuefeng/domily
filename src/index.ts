@@ -2,7 +2,10 @@ import DomilyAppSchema, {
   app,
   type TDomilyAppSchema,
 } from "./core/schemas/app";
-import { page, type IDomilyPageSchema } from "./core/schemas/page";
+import DomilyPageSchema, {
+  page,
+  type IDomilyPageSchema,
+} from "./core/schemas/page";
 import {
   type IDomilyRenderSchema,
   type DOMilyTags,
@@ -26,7 +29,15 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
       parent?: HTMLElement | Document | ShadowRoot | string
     ): Promise<DOMilyRenderReturnType<any, any>> | undefined;
   };
-  page(schema: IDomilyPageSchema): any;
+  page<PageMeta = {}>(
+    schema: IDomilyPageSchema<PageMeta>,
+    app?: DomilyAppSchema<any>
+  ): {
+    page: DomilyPageSchema<PageMeta>;
+    mount(
+      parent?: HTMLElement | Document | ShadowRoot | string
+    ): Promise<DOMilyRenderReturnType<any, any>>;
+  };
   render: <K extends DOMilyTags<CustomTagNameMap>>(
     schema: IDomilyRenderSchema<CustomTagNameMap, K>
   ) => DOMilyRenderReturnType<CustomTagNameMap, K>;

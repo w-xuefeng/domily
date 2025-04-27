@@ -84,4 +84,16 @@ export default class DomilyPageSchema<PageMeta = {}> {
   }
 }
 
-export function page() {}
+export function page<PageMeta = {}>(
+  schema: IDomilyPageSchema<PageMeta>,
+  app?: DomilyAppSchema<any>
+) {
+  const pageInstance = DomilyPageSchema.create(schema, app);
+
+  return {
+    page: pageInstance,
+    mount(parent?: HTMLElement | Document | ShadowRoot | string) {
+      return pageInstance.render(parent);
+    },
+  };
+}
