@@ -1,10 +1,11 @@
 import { Domily } from "../lib/index.esm.js";
+import Page from "./page.dom.json" with { type: 'json' };
 
 const routes = [
   {
     path: "/",
     name: "home",
-    component: import("./component.js"),
+    component: () => Page,
   },
 ];
 

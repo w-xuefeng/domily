@@ -3,16 +3,6 @@ import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
 
 export const DomilyAppInstances = new Map<string | symbol, DomilyAppSchema>();
 
-export interface IDomilySPASchema {
-  mode?: "SPA";
-  routes?: IDomilyPageSchema<any>[];
-}
-
-export interface IDomilyMPASchema {
-  mode?: "MPA";
-  pages?: IDomilyPageSchema<any>[];
-}
-
 export type TDomilyAppSchema<
   GlobalProperties extends Record<string, any> = Record<string, any>
 > = {
@@ -21,7 +11,9 @@ export type TDomilyAppSchema<
   title?: string;
   basePath?: string;
   globalProperties?: GlobalProperties;
-} & (IDomilySPASchema | IDomilyMPASchema);
+  mode?: "SPA" | "MPA";
+  routes?: IDomilyPageSchema<any>[];
+};
 
 export default class DomilyAppSchema<
   GlobalProperties extends Record<string, any> = Record<string, any>
@@ -42,11 +34,8 @@ export default class DomilyAppSchema<
     this.mode = schema.mode || DomilyAppSchemaDefault.mode;
     this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
     this.routes =
-      schema.mode === "SPA"
-        ? schema.routes?.map((e) => DomilyPageSchema.create(e, this)) || []
-        : schema.mode === "MPA"
-        ? schema.pages?.map((e) => DomilyPageSchema.create(e, this)) || []
-        : [];
+      schema.routes?.map((e) => DomilyPageSchema.create(e, this)) || [];
+
     DomilyAppInstances.set(this.namespace, this);
   }
 

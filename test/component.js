@@ -2,25 +2,45 @@ export default function HomePage() {
   return {
     tag: "div",
     className: "home-page",
-    style: {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "#eee",
-    },
-    children: [
-      {
-        tag: "header",
-        className: "header",
-        style: {
+    css: {
+      html: {
+        height: "100%",
+      },
+      body: {
+        backgroundColor: "#eee",
+        margin: "0",
+        ".header": {
           width: "100%",
-          height: "60",
+          height: "60px",
           backgroundColor: "#fff",
           display: "flex",
           alignItems: "center",
           boxSizing: "border-box",
           padding: "10px 20px",
+          ".logo": {
+            fontSize: "20px",
+            color: "rgb(0, 109, 206)",
+          },
+          svg: {
+            border: "1px solid red",
+          },
         },
+      },
+    },
+    style: {
+      width: "100%",
+      height: "100%",
+    },
+    children: [
+      {
+        tag: "header",
+        className: "header",
         children: [
+          {
+            tag: "div",
+            className: "logo",
+            text: "Test-header",
+          },
           {
             tag: "svg",
             attrs: {
