@@ -1,20 +1,35 @@
 import { mountable, proxyDomilySchema } from "../../utils/dom";
+import { merge } from "../../utils/obj";
 import DomilyRenderSchema, {
-  DOMilyRenderReturnType,
-  IDomilyRenderSchema,
+  type DOMilyRenderReturnType,
+  type IDomilyCustomElementOptions,
+  type IDomilyRenderSchema,
 } from "./render";
 
-export interface DOMilyComponent {
-  ():
+export interface DOMilyCustomElementComponent {
+  name: string;
+  customElementComponent:
     | DomilyRenderSchema
     | IDomilyRenderSchema<any, any>
     | DOMilyRenderReturnType<any, any>;
 }
+export interface DOMilyComponent {
+  ():
+    | DomilyRenderSchema
+    | IDomilyRenderSchema<any, any>
+    | DOMilyRenderReturnType<any, any>
+    | DOMilyCustomElementComponent;
+}
 
 export type AsyncDOMilyComponentModule = Promise<{ default: DOMilyComponent }>;
 
-export function parseComponent(functionComponent: DOMilyComponent) {
-  const comp = functionComponent();
+export function parseDomilyComponent(
+  comp:
+    | DomilyRenderSchema
+    | IDomilyRenderSchema<any, any>
+    | DOMilyRenderReturnType<any, any>,
+  customElement?: IDomilyCustomElementOptions
+) {
   if (
     typeof comp === "object" &&
     comp &&
@@ -35,6 +50,25 @@ export function parseComponent(functionComponent: DOMilyComponent) {
     node.schema = proxyDomilySchema(comp, node);
     return node;
   }
+
+  /**
+   * The customElement.enable in the IDomilyRenderSchema has a higher priority than the external one   *
+   * prioritize taking values from IDomilyRenderSchema.customElement.enable,
+   * if undefined, then take values from outside
+   */
+  if (customElement && customElement.enable) {
+    (comp as IDomilyRenderSchema<any, any>).customElement = merge(
+      (comp as IDomilyRenderSchema<any, any>).customElement,
+      merge(customElement, {
+        enable:
+          typeof (comp as IDomilyRenderSchema<any, any>).customElement
+            ?.enable === "boolean"
+            ? (comp as IDomilyRenderSchema<any, any>).customElement?.enable
+            : customElement?.enable,
+      })
+    );
+  }
+
   const schema = DomilyRenderSchema.create(
     comp as IDomilyRenderSchema<any, any>
   );
@@ -47,4 +81,15 @@ export function parseComponent(functionComponent: DOMilyComponent) {
   );
   node.schema = proxyDomilySchema(schema, node);
   return node;
+}
+
+export function parseComponent(functionComponent: DOMilyComponent) {
+  const comp = functionComponent();
+  if ("name" in comp && "customElementComponent" in comp) {
+    return parseDomilyComponent(comp.customElementComponent, {
+      enable: true,
+      name: comp.name,
+    });
+  }
+  return parseDomilyComponent(comp);
 }

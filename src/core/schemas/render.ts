@@ -1,4 +1,5 @@
 import { c, f, h, proxyDomilySchema, mountable } from "../../utils/dom";
+import { merge } from "../../utils/obj";
 import type {
   TDomilyRenderProperties,
   WithCustomElementTagNameMap,
@@ -56,6 +57,13 @@ export type DOMilyChildren =
   | undefined
   | null;
 
+export interface IDomilyCustomElementOptions {
+  enable?: boolean;
+  name?: string;
+  useShadowDOM?: boolean;
+  shadowDOMMode?: "open" | "closed";
+}
+
 export interface IDomilyRenderSchema<
   CustomElementMap = {},
   K extends DOMilyTags<CustomElementMap> = DOMilyTags
@@ -73,6 +81,7 @@ export interface IDomilyRenderSchema<
   events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
+  customElement?: IDomilyCustomElementOptions;
 }
 
 export interface DOMilyRenderReturnType<
@@ -114,6 +123,11 @@ export default class DomilyRenderSchema<
   events?: DOMilyEventListenerRecord<DOMilyEventKeys>;
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
+  customElement?: IDomilyCustomElementOptions = {
+    enable: false,
+    useShadowDOM: false,
+    shadowDOMMode: "open",
+  };
   childrenSchema: DomilyRenderSchema<any, any>[] = [];
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
   parentElement: HTMLElement | null = null;
@@ -141,6 +155,7 @@ export default class DomilyRenderSchema<
     this.events = this.handleEvents(schema.events);
     this.domIf = this.handleDIf(schema.domIf);
     this.domShow = this.handleDShow(schema.domShow);
+    this.customElement = merge(this.customElement, schema.customElement);
   }
 
   handleEventsOption(
@@ -252,6 +267,38 @@ export default class DomilyRenderSchema<
     return dom;
   }
 
+  handleCustomElement(dom: HTMLElement | Node) {
+    const { enable, name, useShadowDOM, shadowDOMMode } =
+      this.customElement || {};
+    if (!enable || !name || customElements.get(name)) {
+      return dom;
+    }
+    customElements.define(
+      name,
+      class extends HTMLElement {
+        shadowRoot: ShadowRoot | null = null;
+        constructor() {
+          super();
+          if (useShadowDOM) {
+            this.shadowRoot = this.attachShadow({
+              mode: shadowDOMMode || "open",
+            });
+          }
+        }
+        connectedCallback() {
+          const container = this.shadowRoot ?? this;
+          container.appendChild(dom);
+        }
+      }
+    );
+    return document.createElement(name);
+  }
+
+  domAOPTask(dom: HTMLElement | Node) {
+    const next = this.handleDomLoadEvent(dom);
+    return this.handleCustomElement(next);
+  }
+
   handleCSS() {
     if (!this.css) {
       return;
@@ -295,20 +342,18 @@ export default class DomilyRenderSchema<
     }
 
     if (this.tag === "text") {
-      return this.handleDomLoadEvent(
-        document.createTextNode(String(this.text ?? ""))
-      );
+      return this.domAOPTask(document.createTextNode(String(this.text ?? "")));
     }
 
     if (this.tag === "comment") {
-      return this.handleDomLoadEvent(c(String(this.text ?? "comment node")));
+      return this.domAOPTask(c(String(this.text ?? "comment node")));
     }
 
     if (this.tag === "fragment" && this.children) {
       const children = (
         Array.isArray(this.children) ? this.children : [this.children]
       ).filter((e) => !!e) as Parameters<typeof fragment>[0];
-      return this.handleDomLoadEvent(fragment(children).fragment);
+      return this.domAOPTask(fragment(children).fragment);
     }
 
     const css = this.handleCSS();
@@ -364,7 +409,7 @@ export default class DomilyRenderSchema<
       children.unshift(css);
     }
 
-    return this.handleDomLoadEvent(
+    return this.domAOPTask(
       h<CustomElementMap, K>(
         this.tag,
         {
