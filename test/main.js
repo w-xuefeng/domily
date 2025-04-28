@@ -1,11 +1,31 @@
 import { Domily } from "../lib/index.esm.js";
-import Page from "./page.dom.json" with { type: "json" };
+import Home from "./home.json" with { type: "json" };
+import HomeDetails from "./home-details.json" with { type: "json" };
+import Test from "./test.json" with { type: "json" };
 
 const routes = [
   {
-    path: "/",
+    path: '/',
+    redirect: {
+      path: '/home'
+    }
+  },
+  {
+    path: "/home",
     name: "home",
-    component: () => Page,
+    component: () => Home,
+    children: [
+      {
+        path: '/home/details',
+        name: "home-details",
+        component: () => HomeDetails
+      }
+    ]
+  },
+  {
+    path: "/test",
+    name: "test",
+    component: () => Test,
   },
 ];
 

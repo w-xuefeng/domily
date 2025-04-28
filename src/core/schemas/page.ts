@@ -12,7 +12,8 @@ export interface IDomilyPageSchema<PageMeta = {}> {
   name?: string;
   namespace?: string | symbol;
   path: string;
-  component: DOMilyComponent | AsyncDOMilyComponentModule;
+  component?: DOMilyComponent | AsyncDOMilyComponentModule;
+  redirect?: { name?: string; path?: string };
   meta?: PageMeta;
   children?: IDomilyPageSchema[];
 }
@@ -23,7 +24,8 @@ export default class DomilyPageSchema<PageMeta = {}> {
   namespace: string | symbol;
   app: DomilyAppSchema<any>;
   path: string;
-  component: DOMilyComponent | AsyncDOMilyComponentModule;
+  component?: DOMilyComponent | AsyncDOMilyComponentModule;
+  redirect?: { name?: string; path?: string };
   meta?: PageMeta;
   children?: DomilyPageSchema<unknown>[];
   private functionComponent: DOMilyComponent | null = null;
@@ -38,6 +40,7 @@ export default class DomilyPageSchema<PageMeta = {}> {
       new DomilyAppSchema<any>({ namespace: this.namespace });
     this.path = `${this.app.basePath || ""}${schema.path}`;
     this.component = schema.component;
+    this.redirect = schema.redirect;
     this.meta = schema.meta as PageMeta;
     this.children = schema.children?.map(
       (e) => new DomilyPageSchema<unknown>(e)
@@ -62,7 +65,18 @@ export default class DomilyPageSchema<PageMeta = {}> {
 
   render(el?: HTMLElement | Document | ShadowRoot | string) {
     const { resolve, reject, promise } =
-      Promise.withResolvers<DOMilyRenderReturnType<any, any>>();
+      Promise.withResolvers<DOMilyRenderReturnType<any, any> | null>();
+
+    if (this.redirect) {
+      const { path, name } = this.redirect;
+      if (path) {
+        resolve(this.app.routesPathFlatMap[path].render(el));
+      } else if (name) {
+        resolve(this.app.routesNameFlatMap[name].render(el));
+      }
+      return promise;
+    }
+
     if (isThenable(this.component)) {
       this.asyncComponentLoading = true;
       this.component
@@ -76,9 +90,11 @@ export default class DomilyPageSchema<PageMeta = {}> {
             resolve(this.#toView(this.functionComponent, el));
           }
         });
-    } else {
+    } else if (isFunction(this.component)) {
       this.functionComponent = this.component;
       resolve(this.#toView(this.functionComponent, el));
+    } else {
+      resolve(null);
     }
     return promise;
   }

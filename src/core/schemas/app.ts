@@ -47,8 +47,48 @@ export default class DomilyAppSchema<
 
   use() {}
 
+  get routesPathMap() {
+    return Object.fromEntries(this.routes.map((e) => [e.path, e]));
+  }
+  get routesPathFlatMap() {
+    const result: Record<string, DomilyPageSchema<any>> = {};
+    const getChildRoutes = (routes: DomilyPageSchema<any>[]) => {
+      routes.forEach((e) => {
+        result[e.path] = e;
+        if (e.children) {
+          getChildRoutes(e.children);
+        }
+      });
+    };
+    getChildRoutes(this.routes);
+    return result;
+  }
+
+  get routesNameMap() {
+    return Object.fromEntries(this.routes.map((e) => [e.name || e.path, e]));
+  }
+
+  get routesNameFlatMap() {
+    const result: Record<string, DomilyPageSchema<any>> = {};
+    const getChildRoutes = (routes: DomilyPageSchema<any>[]) => {
+      routes.forEach((e) => {
+        result[e.name || e.path] = e;
+        if (e.children) {
+          getChildRoutes(e.children);
+        }
+      });
+    };
+    getChildRoutes(this.routes);
+    return result;
+  }
+
   match() {
     const { pathname } = location;
+    // TODO
+    // console.log("routesPathMap", this.routesPathMap);
+    // console.log("routesPathFlatMap", this.routesPathFlatMap);
+    // console.log("routesNameMap", this.routesNameMap);
+    // console.log("routesNameFlatMap", this.routesNameFlatMap);
     const matched = this.routes.find((route) =>
       pathname.startsWith(route.path)
     );

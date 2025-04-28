@@ -1,16 +1,16 @@
 {
   "tag": "div",
-  "className": "home-page",
+  "className": "test-page",
   "customElement": {
     "enable": true,
-    "name": "home-page"
+    "name": "test-page"
   },
   "css": {
     "html": {
       "height": "100%"
     },
     "body": {
-      "backgroundColor": "#eee",
+      "backgroundColor": "#aaa",
       "margin": "0",
       ".header": {
         "width": "100%",
@@ -25,7 +25,7 @@
           "color": "rgb(0, 109, 206)"
         },
         "svg": {
-          "border": "1px solid red"
+          "border": "1px solid blue"
         }
       }
     }
