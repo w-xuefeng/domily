@@ -52,20 +52,14 @@ export function parseDomilyComponent(
   }
 
   /**
-   * The customElement.enable in the IDomilyRenderSchema has a higher priority than the external one   *
-   * prioritize taking values from IDomilyRenderSchema.customElement.enable,
+   * The customElement in the IDomilyRenderSchema has a higher priority than the external one
+   * prioritize taking values from IDomilyRenderSchema.customElement,
    * if undefined, then take values from outside
    */
   if (customElement && customElement.enable) {
     (comp as IDomilyRenderSchema<any, any>).customElement = merge(
-      (comp as IDomilyRenderSchema<any, any>).customElement,
-      merge(customElement, {
-        enable:
-          typeof (comp as IDomilyRenderSchema<any, any>).customElement
-            ?.enable === "boolean"
-            ? (comp as IDomilyRenderSchema<any, any>).customElement?.enable
-            : customElement?.enable,
-      })
+      customElement,
+      (comp as IDomilyRenderSchema<any, any>).customElement
     );
   }
 
