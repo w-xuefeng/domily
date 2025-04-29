@@ -1,4 +1,5 @@
 import { DomilyAppSchemaDefault } from "../../config";
+import { DomilyRouter } from "../router/router";
 import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
 
 export const DomilyAppInstances = new Map<string | symbol, DomilyAppSchema>();
@@ -12,6 +13,7 @@ export type TDomilyAppSchema<
   basePath?: string;
   globalProperties?: GlobalProperties;
   mode?: "SPA" | "MPA";
+  routerMode?: "hash" | "history";
   routes?: IDomilyPageSchema<any>[];
 };
 
@@ -23,8 +25,10 @@ export default class DomilyAppSchema<
   title: string;
   basePath: string;
   mode: "SPA" | "MPA";
+  routerMode: "hash" | "history";
   globalProperties: GlobalProperties;
   routes: DomilyPageSchema<any>[] = [];
+  router: DomilyRouter;
 
   constructor(schema: TDomilyAppSchema<GlobalProperties>) {
     this.namespace = schema.namespace;
@@ -32,10 +36,11 @@ export default class DomilyAppSchema<
     this.title = schema.title || DomilyAppSchemaDefault.title;
     this.basePath = schema.basePath || "";
     this.mode = schema.mode || DomilyAppSchemaDefault.mode;
+    this.routerMode = schema.routerMode || DomilyAppSchemaDefault.routerMode;
     this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
     this.routes =
       schema.routes?.map((e) => DomilyPageSchema.create(e, this)) || [];
-
+    this.router = new DomilyRouter(this);
     DomilyAppInstances.set(this.namespace, this);
   }
 
@@ -82,22 +87,6 @@ export default class DomilyAppSchema<
     return result;
   }
 
-  match() {
-    const { pathname } = location;
-    // TODO
-    // console.log("routesPathMap", this.routesPathMap);
-    // console.log("routesPathFlatMap", this.routesPathFlatMap);
-    // console.log("routesNameMap", this.routesNameMap);
-    // console.log("routesNameFlatMap", this.routesNameFlatMap);
-    const matched = this.routes.find((route) =>
-      pathname.startsWith(route.path)
-    );
-    if (!matched) {
-      return this.routes.find((route) => ["*"].includes(route.path));
-    }
-    return matched;
-  }
-
   destroy() {
     DomilyAppInstances.delete(this.namespace);
   }
@@ -111,7 +100,7 @@ export function app<
   return {
     app: appInstance,
     mount(parent?: HTMLElement | Document | ShadowRoot | string) {
-      const currentPage = appInstance.match();
+      const currentPage = appInstance.router.currentRoute;
       if (!currentPage) {
         return;
       }

@@ -1,4 +1,5 @@
 import { isFunction, isThenable } from "../../utils/is";
+import { GLobalPageRouterStoreArray } from "../router/router";
 import DomilyAppSchema, { DomilyAppInstances } from "./app";
 import {
   type DOMilyComponent,
@@ -12,6 +13,7 @@ export interface IDomilyPageSchema<PageMeta = {}> {
   name?: string;
   namespace?: string | symbol;
   path: string;
+  alias?: string | string[];
   component?: DOMilyComponent | AsyncDOMilyComponentModule;
   redirect?: { name?: string; path?: string };
   meta?: PageMeta;
@@ -24,12 +26,15 @@ export default class DomilyPageSchema<PageMeta = {}> {
   namespace: string | symbol;
   app: DomilyAppSchema<any>;
   path: string;
+  alias?: string | string[];
   component?: DOMilyComponent | AsyncDOMilyComponentModule;
   redirect?: { name?: string; path?: string };
   meta?: PageMeta;
   children?: DomilyPageSchema<unknown>[];
   private functionComponent: DOMilyComponent | null = null;
   private asyncComponentLoading = false;
+  private dom: HTMLElement | Node | null = null;
+
   constructor(schema: IDomilyPageSchema<PageMeta>, app?: DomilyAppSchema<any>) {
     this.el = schema.el;
     this.name = schema.name;
@@ -37,13 +42,14 @@ export default class DomilyPageSchema<PageMeta = {}> {
     this.app =
       app ||
       DomilyAppInstances.get(this.namespace) ||
-      new DomilyAppSchema<any>({ namespace: this.namespace });
+      new DomilyAppSchema<any>({ namespace: this.namespace, routes: [schema] });
     this.path = `${this.app.basePath || ""}${schema.path}`;
+    this.alias = schema.alias;
     this.component = schema.component;
     this.redirect = schema.redirect;
     this.meta = schema.meta as PageMeta;
     this.children = schema.children?.map(
-      (e) => new DomilyPageSchema<unknown>(e)
+      (e) => new DomilyPageSchema<unknown>(e, this.app)
     );
   }
 
@@ -58,8 +64,14 @@ export default class DomilyPageSchema<PageMeta = {}> {
     component: DOMilyComponent,
     el?: HTMLElement | Document | ShadowRoot | string
   ) {
+    GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
     const comp = parseComponent(component);
     comp.mount(el || this.el || this.app.el);
+    GLobalPageRouterStoreArray.push(
+      Object.assign(this, {
+        comp,
+      })
+    );
     return comp;
   }
 

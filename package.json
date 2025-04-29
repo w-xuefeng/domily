@@ -31,5 +31,8 @@
     "rimraf": "^6.0.1",
     "rolldown": "1.0.0-beta.7",
     "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "path-to-regexp": "^8.2.0"
   }
 }

@@ -3,7 +3,17 @@
     "target": "ESNext",
     "lib": [
       "DOM",
-      "ESNext",
+      "DOM.Iterable",
+      "ES2015",
+      "ES2016",
+      "ES2017",
+      "ES2018",
+      "ES2019",
+      "ES2020",
+      "ES2021",
+      "ES2022",
+      "ES2023",
+      "ESNext"
     ],
     "module": "ESNext",
     "moduleResolution": "bundler",
