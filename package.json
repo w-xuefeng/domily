@@ -1,38 +1,21 @@
 {
-  "name": "@domily/runtime-core",
-  "version": "1.0.0",
-  "description": "domily",
-  "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
-  "types": "lib/types/index.d.ts",
+  "name": "domily",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "private": true,
   "scripts": {
-    "clean": "rimraf lib",
-    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c"
+    "build:rc": "bun --filter @domily/runtime-core build",
+    "test:vp": "bun --filter vite-plugin-domily test",
+    "build:vp-test": "bun --filter vite-plugin-domily test:build",
+    "yp": "bun build:rc && cd packages/runtime-core && yalc publish",
+    "ya": "cd packages/vite-plugin-domily && yalc add @domily/runtime-core"
   },
-  "exports": {
-    ".": {
-      "import": "./lib/index.esm.js",
-      "require": "./lib/index.cjs.js",
-      "types": "./lib/types/index.d.ts"
-    }
-  },
-  "keywords": [
-    "dom",
-    "schema",
-    "scheme"
-  ],
-  "files": [
-    "lib"
-  ],
-  "author": "w-xuefeng",
-  "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4",
-    "rimraf": "^6.0.1",
-    "rolldown": "1.0.0-beta.7",
-    "typescript": "^5.2.2"
+    "@types/bun": "latest"
   },
-  "dependencies": {
-    "path-to-regexp": "^8.2.0"
+  "peerDependencies": {
+    "typescript": "^5"
   }
 }

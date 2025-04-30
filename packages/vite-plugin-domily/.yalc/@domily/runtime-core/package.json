@@ -1,0 +1,33 @@
+{
+  "name": "@domily/runtime-core",
+  "version": "1.0.0",
+  "description": "domily",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/types/index.d.ts",
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c"
+  },
+  "exports": {
+    ".": {
+      "import": "./lib/index.esm.js",
+      "require": "./lib/index.cjs.js",
+      "types": "./lib/types/index.d.ts"
+    }
+  },
+  "keywords": [
+    "dom",
+    "schema",
+    "scheme"
+  ],
+  "files": [
+    "lib"
+  ],
+  "author": "w-xuefeng",
+  "license": "MIT",
+  "dependencies": {
+    "path-to-regexp": "^8.2.0"
+  },
+  "yalcSig": "4c299b70709534f699f50316fb51e1ad"
+}

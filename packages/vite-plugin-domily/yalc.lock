@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "@domily/runtime-core": {
+      "signature": "4c299b70709534f699f50316fb51e1ad",
+      "file": true
+    }
+  }
+}

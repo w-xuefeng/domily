@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "importHelpers": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "types": [
+      "node",
+      "vite",
+      "./types/domily.d.ts"
+    ],
+    "lib": [
+      "ESNext",
+      "DOM",
+    ],
+    "preserveValueImports": false,
+    "importsNotUsedAsValues": "remove",
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+  ]
+}
