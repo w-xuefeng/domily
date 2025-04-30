@@ -1,5 +1,5 @@
 {
-  "name": "domily",
+  "name": "@domily/runtime-core",
   "version": "1.0.0",
   "description": "domily",
   "main": "lib/index.cjs.js",
@@ -7,7 +7,7 @@
   "types": "lib/types/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "pnpm clean && tsc -b ./tsconfig.types.json && rolldown -c"
+    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c"
   },
   "exports": {
     ".": {

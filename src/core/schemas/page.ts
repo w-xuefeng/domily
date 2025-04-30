@@ -64,7 +64,6 @@ export default class DomilyPageSchema<PageMeta = {}> {
     component: DOMilyComponent,
     el?: HTMLElement | Document | ShadowRoot | string
   ) {
-    GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
     const comp = parseComponent(component);
     comp.mount(el || this.el || this.app.el);
     GLobalPageRouterStoreArray.push(

@@ -270,28 +270,36 @@ export default class DomilyRenderSchema<
   handleCustomElement(dom: HTMLElement | Node) {
     const { enable, name, useShadowDOM, shadowDOMMode } =
       this.customElement || {};
-    if (!enable || !name || customElements.get(name)) {
+    if (!enable || !name) {
       return dom;
     }
-    customElements.define(
-      name,
-      class extends HTMLElement {
-        shadowRoot: ShadowRoot | null = null;
-        constructor() {
-          super();
-          if (useShadowDOM) {
-            this.shadowRoot = this.attachShadow({
-              mode: shadowDOMMode || "open",
-            });
-          }
-        }
-        connectedCallback() {
-          const container = this.shadowRoot ?? this;
-          container.appendChild(dom);
+    const CustomElementComponent = class extends HTMLElement {
+      shadowRoot: ShadowRoot | null = null;
+      child: HTMLElement | Node | null = null;
+      constructor(child: HTMLElement | Node | null) {
+        super();
+        this.child = child;
+        if (useShadowDOM) {
+          this.shadowRoot = this.attachShadow({
+            mode: shadowDOMMode || "open",
+          });
         }
       }
-    );
-    return document.createElement(name);
+      connectedCallback() {
+        const container = this.shadowRoot ?? this;
+        if (this.child) {
+          container.appendChild(this.child);
+        } else {
+          container.appendChild(document.createElement("slot"));
+        }
+      }
+    };
+    const CEC = customElements.get(name);
+    if (!CEC) {
+      customElements.define(name, CustomElementComponent);
+      return new CustomElementComponent(dom);
+    }
+    return new CEC(dom);
   }
 
   domAOPTask(dom: HTMLElement | Node) {

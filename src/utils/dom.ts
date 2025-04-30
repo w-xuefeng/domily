@@ -203,13 +203,33 @@ export function camelToKebab(str: string): string {
 }
 
 export function f(children: (HTMLElement | Node | string | null)[] = []) {
-  const documentFragment = document.createDocumentFragment();
-  for (const child of children) {
-    if (child) {
-      documentFragment.append(child);
+  const tag = "domily-fragment";
+  const Fragment = class extends HTMLElement {
+    child: (HTMLElement | Node | string | null)[];
+    constructor(children: (HTMLElement | Node | string | null)[] = []) {
+      super();
+      this.child = children;
     }
+    connectedCallback() {
+      if (!this.child.length) {
+        this.appendChild(document.createElement("slot"));
+        return;
+      }
+      const documentFragment = document.createDocumentFragment();
+      for (const item of this.child) {
+        if (item) {
+          documentFragment.append(item);
+        }
+      }
+      this.appendChild(documentFragment);
+    }
+  };
+  const F = customElements.get(tag);
+  if (!F) {
+    customElements.define(tag, Fragment);
+    return new Fragment(children);
   }
-  return documentFragment;
+  return new F(children);
 }
 
 export function c(data: string) {
@@ -280,7 +300,10 @@ export function internalCreateElement<P>(
     });
   }
   if (children) {
-    container.append(f(Array.isArray(children) ? children : [children]));
+    container.append.apply(
+      container,
+      Array.isArray(children) ? children : [children]
+    );
   }
   return container;
 }
@@ -330,7 +353,9 @@ export function domMountToParent(
   }
   container.append(dom);
   return () => {
-    if (dom) container.removeChild(dom);
+    if (dom) {
+      removeDOM(dom);
+    }
     dom = null;
   };
 }
@@ -428,6 +453,10 @@ export function removeDOM(dom: HTMLElement | Node | ShadowRoot) {
     dom.outerHTML = "";
     return;
   }
+  if (dom.nodeName === "#document-fragment") {
+    dom.childNodes.forEach((e) => removeDOM(e));
+    return;
+  }
   throw new Error("[DOMily] removeDOM is not supported in this environment");
 }
 
@@ -459,7 +488,9 @@ export function replaceDOM(
 
 export function mountable<
   K extends string,
-  T extends { [k in K]: HTMLElement | Node | null }
+  T extends {
+    [k in K]: HTMLElement | Node | null;
+  }
 >(data: T, domKey = "dom" as K) {
   return {
     ...data,

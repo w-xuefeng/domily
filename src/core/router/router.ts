@@ -36,6 +36,7 @@ export class DomilyRouter {
       }
       if (!hashChangeEventListenerAdded) {
         globalThis.addEventListener("hashchange", () => {
+          GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
           this.currentRoute = this.match();
           this.currentRoute?.render();
         });
@@ -51,9 +52,6 @@ export class DomilyRouter {
         : globalThis.location.hash.slice(1);
 
     const matched = matchRoute(this.routes, pathname);
-
-    console.log("🚀 ~ match ~ pathname:", pathname);
-    console.log("🚀 ~ match ~ matched:", matched);
     if (!matched) {
       return this.app.routesPathMap["/*"];
     }
