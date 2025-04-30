@@ -28,6 +28,43 @@ export const DomilyComponentWeakMap = new WeakMap<
   DOMilyRenderReturnType<any, any>
 >();
 
+export function parseDomilyComponentSchema(
+  comp:
+    | DomilyRenderSchema
+    | IDomilyRenderSchema<any, any>
+    | DOMilyRenderReturnType<any, any>,
+  customElement?: IDomilyCustomElementOptions
+) {
+  if (
+    typeof comp === "object" &&
+    comp &&
+    "dom" in comp &&
+    "schema" in comp &&
+    typeof comp.schema === "object"
+  ) {
+    return comp;
+  }
+  if (comp instanceof DomilyRenderSchema) {
+    return {
+      schema: comp,
+      dom: comp.render(),
+    };
+  }
+  if (customElement && customElement.enable) {
+    (comp as IDomilyRenderSchema<any, any>).customElement = merge(
+      customElement,
+      (comp as IDomilyRenderSchema<any, any>).customElement
+    );
+  }
+  const schema = DomilyRenderSchema.create(
+    comp as IDomilyRenderSchema<any, any>
+  );
+  return {
+    schema,
+    dom: schema.render(),
+  };
+}
+
 export function parseDomilyComponent(
   comp:
     | DomilyRenderSchema

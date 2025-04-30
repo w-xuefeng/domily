@@ -4,12 +4,5 @@ import domily from "../index";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    inspect(),
-    domily({
-      customElement: {
-        enable: false,
-      },
-    }),
-  ],
+  plugins: [inspect(), domily()],
 });

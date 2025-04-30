@@ -8,6 +8,24 @@ export const GLobalPageRouterStoreArray: (IMatchedRoute & {
   comp: DOMilyRenderReturnType<any, any>;
 })[] = [];
 
+export const GLobalPageRouterRenderingQueue: (() => Promise<any>)[] = [];
+
+let GLobalPageRouterRendering = false;
+
+export const queueRender = async () => {
+  if (GLobalPageRouterRendering) {
+    return;
+  }
+  GLobalPageRouterRendering = true;
+  while (GLobalPageRouterRenderingQueue.length) {
+    const promise = GLobalPageRouterRenderingQueue.shift();
+    if (typeof promise === "function") {
+      await promise();
+    }
+  }
+  GLobalPageRouterRendering = false;
+};
+
 export interface IRouterOptions {
   name?: string;
   path?: string;
@@ -54,8 +72,8 @@ export class DomilyRouter {
     return await item.render(routerViewHTMLElement);
   }
 
-  async deepRender(matched: IMatchedRoute) {
-    if (!this.root) {
+  async deepRender(matched?: IMatchedRoute) {
+    if (!this.root || !matched) {
       return;
     }
     const rootRouterView = this.root.querySelector<HTMLElement>(
@@ -114,10 +132,15 @@ export class DomilyRouter {
     return matched;
   }
 
-  async matchPage() {
-    GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
-    this.currentRoute = this.match();
-    await this.deepRender(this.currentRoute);
+  matchPage() {
+    const renderPromise = () =>
+      new Promise<void>((resolve) => {
+        GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
+        this.currentRoute = this.match();
+        this.deepRender(this.currentRoute).finally(resolve);
+      });
+    GLobalPageRouterRenderingQueue.push(renderPromise);
+    queueRender();
   }
 
   public resolve(options: IRouterOptions) {

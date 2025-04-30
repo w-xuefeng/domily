@@ -4,6 +4,10 @@ import type {
   TDomilyRenderProperties,
   WithCustomElementTagNameMap,
 } from "../types/tags";
+import {
+  DOMilyCustomElementComponent,
+  parseDomilyComponentSchema,
+} from "./component";
 
 export type DOMilyTags<CustomElementMap = {}> =
   keyof WithCustomElementTagNameMap<CustomElementMap>;
@@ -48,6 +52,7 @@ export type DOMilyChildren =
           dom: (HTMLElement | Node | null)[];
           schema: DomilyRenderSchema<any, any>[];
         }
+      | DOMilyCustomElementComponent
       | HTMLElement
       | Node
       | string
@@ -384,6 +389,17 @@ export default class DomilyRenderSchema<
         if (typeof child === "string") {
           return document.createTextNode(child);
         }
+        if ("name" in child && "customElementComponent" in child) {
+          const { schema, dom } = parseDomilyComponentSchema(
+            child.customElementComponent,
+            {
+              enable: true,
+              name: child.name,
+            }
+          );
+          this.childrenSchema.push(schema);
+          return dom;
+        }
         if (
           typeof child === "object" &&
           "schema" in child &&
@@ -416,7 +432,6 @@ export default class DomilyRenderSchema<
     if (css) {
       children.unshift(css);
     }
-
     return this.domAOPTask(
       h<CustomElementMap, K>(
         this.tag,
