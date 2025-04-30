@@ -1,7 +1,11 @@
+import { DomilyFragment } from "../../utils/custom-element";
+import { DomilyRouterView } from "../router/router";
+
 export interface INodeNameMap {
   text: Text;
   comment: Comment;
-  fragment: DocumentFragment;
+  fragment: DomilyFragment;
+  "router-view": DomilyRouterView;
 }
 
 export type TSvgElementNameMap = {

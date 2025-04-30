@@ -4,20 +4,21 @@ import type {
   TDomilyRenderProperties,
   TSvgElementNameMap,
 } from "../core/types/tags";
+import { DomilyFragment } from "./custom-element";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
 
 export function $<E extends Element = Element>(
   selector: string,
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return container.querySelector<E>(selector);
 }
 
 export function $$<E extends Element = Element>(
   selector: string,
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return Array.from(container.querySelectorAll<E>(selector));
 }
@@ -33,21 +34,21 @@ export function $el<E extends Element = Element>(
 
 export function $item<E extends Element = Element>(
   [selector, i]: [q: string, i: number],
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return Array.from($<E>(selector, container)?.children || []).at(i);
 }
 
 export function $option<E extends Element = Element>(
   [selector, key, value]: [selector: string, key: keyof E, value: string],
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return $$<E>(selector, container).find((e) => e[key] === value);
 }
 
 export function $optionIncludes<E extends Element = Element>(
   [selector, key, value]: [selector: string, key: keyof E, value: string],
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return $$<E>(selector, container).find(
     (e) => `${e[key]}`.includes(value) || value.includes(e[key] as string)
@@ -59,7 +60,7 @@ export function $dispatch(
     selector: string | HTMLElement,
     event: Event | CustomEvent
   ],
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return (
     typeof selector === "string" ? $(selector, container) : selector
@@ -68,7 +69,7 @@ export function $dispatch(
 
 export function $dispatchEvent<K extends keyof WindowEventMap>(
   [selector, event]: [selector: string | HTMLElement, event: WindowEventMap[K]],
-  container: HTMLElement | Document = document
+  container: HTMLElement | Document | ShadowRoot = document
 ) {
   return (
     typeof selector === "string" ? $(selector, container) : selector
@@ -203,31 +204,10 @@ export function camelToKebab(str: string): string {
 }
 
 export function f(children: (HTMLElement | Node | string | null)[] = []) {
-  const tag = "domily-fragment";
-  const Fragment = class extends HTMLElement {
-    child: (HTMLElement | Node | string | null)[];
-    constructor(children: (HTMLElement | Node | string | null)[] = []) {
-      super();
-      this.child = children;
-    }
-    connectedCallback() {
-      if (!this.child.length) {
-        this.appendChild(document.createElement("slot"));
-        return;
-      }
-      const documentFragment = document.createDocumentFragment();
-      for (const item of this.child) {
-        if (item) {
-          documentFragment.append(item);
-        }
-      }
-      this.appendChild(documentFragment);
-    }
-  };
-  const F = customElements.get(tag);
+  const F = customElements.get(DomilyFragment.name);
   if (!F) {
-    customElements.define(tag, Fragment);
-    return new Fragment(children);
+    customElements.define(DomilyFragment.name, DomilyFragment);
+    return new DomilyFragment(children);
   }
   return new F(children);
 }

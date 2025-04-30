@@ -1,7 +1,9 @@
 import * as PTR from "path-to-regexp";
 import DomilyPageSchema from "../schemas/page";
 
-export interface IRouterConfig extends DomilyPageSchema<any> {}
+export interface IRouterConfig extends DomilyPageSchema<any> {
+  parent?: DomilyPageSchema<any> | null;
+}
 
 export interface IMatchedRoute extends IRouterConfig {
   params?: Record<string, string>;
@@ -10,27 +12,36 @@ export interface IMatchedRoute extends IRouterConfig {
 }
 
 // 辅助函数：路径优先级评分（静态>动态>通配符）
-const getPathPriorityScore = (path: string): number => {
+export const getPathPriorityScore = (path: string): number => {
   if (path === "*") return 0;
   const dynamicSegments = (path.match(/:\w+/g) || []).length;
   return 1000 - dynamicSegments * 100 + path.length;
 };
 
 // 组合父子路径（处理尾部斜杠）
-const combinePaths = (parent: string, child: string): string => {
+export const combinePaths = (parent?: string, child: string = ""): string => {
+  if (!parent) {
+    return child;
+  }
+  if (child.startsWith(parent)) {
+    return child;
+  }
   if (parent.endsWith("/") && child.startsWith("/")) {
     return parent + child.slice(1);
+  }
+  if (!parent.endsWith("/") && !child.startsWith("/")) {
+    return parent + "/" + child;
   }
   return parent + child;
 };
 
 // 编译路径为正则表达式
-const compilePath = (path: string) => {
+export const compilePath = (path: string) => {
   return PTR.pathToRegexp(path, { end: true });
 };
 
 // 提取参数（合并父级参数）
-const extractParams = (
+export const extractParams = (
   keys: PTR.Key[],
   matched: RegExpExecArray,
   parentParams: Record<string, string>
@@ -42,7 +53,10 @@ const extractParams = (
 };
 
 // 处理别名路径
-const getAliasPaths = (route: IRouterConfig, parentPath: string): string[] => {
+export const getAliasPaths = (
+  route: IRouterConfig,
+  parentPath: string
+): string[] => {
   const aliases = Array.isArray(route.alias)
     ? route.alias
     : route.alias

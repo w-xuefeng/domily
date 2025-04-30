@@ -85,13 +85,23 @@ function builtinDomily() {
       return Domily;
     },
   };
+  /**
+   * register HTMLElementTagNameMap
+   */
   Object.keys(HTMLNodeNameMap).forEach((tag) => {
     Domily.registerElement(tag);
   });
+  /**
+   * register SVGElementTagNameMap
+   */
   Domily.registerElement(`svg`);
   Object.keys(SVGElementNameMap).forEach((tag) => {
     Domily.registerElement(`SVG:${tag}`);
   });
+  /**
+   * register RouterView
+   */
+  Domily.registerElement(`router-view`);
   return Domily as unknown as DOMily;
 }
 

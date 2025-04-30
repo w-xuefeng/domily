@@ -20,13 +20,68 @@ export class DomilyRouter {
   public currentRoute: IMatchedRoute;
   public mode: "history" | "hash";
   private app: DomilyAppSchema;
+  private root: HTMLElement | Document | ShadowRoot | undefined | null = null;
 
   constructor(app: DomilyAppSchema) {
     this.app = app;
     this.routes = app.routes;
     this.mode = app.routerMode;
+    this.defineRouterView();
     this.prepareHashRoute();
     this.currentRoute = this.match();
+  }
+
+  setRoot(root: HTMLElement | Document | ShadowRoot | undefined | null) {
+    this.root = root;
+  }
+
+  getRoot() {
+    return this.root;
+  }
+
+  defineRouterView() {
+    if (!customElements.get(DomilyRouterView.name)) {
+      customElements.define(DomilyRouterView.name, DomilyRouterView);
+    }
+  }
+
+  async prepareRouterView(
+    item: IMatchedRoute,
+    routerViewHTMLElement: HTMLElement
+  ) {
+    routerViewHTMLElement.childNodes.forEach((e) => e.remove());
+    routerViewHTMLElement.setAttribute("path", item.path);
+    return await item.render(routerViewHTMLElement);
+  }
+
+  async deepRender(matched: IMatchedRoute) {
+    if (!this.root) {
+      return;
+    }
+    const rootRouterView = this.root.querySelector<HTMLElement>(
+      DomilyRouterView.name
+    );
+    if (!rootRouterView) {
+      return;
+    }
+    const parents: IMatchedRoute[] = [matched];
+    const getParents = (matched: IMatchedRoute) => {
+      if (matched.parent) {
+        parents.unshift(matched.parent);
+        getParents(matched.parent);
+      }
+    };
+    getParents(matched);
+
+    let lastResult: DOMilyRenderReturnType<any, any> | null = null;
+    for (let i = 0; i < parents.length; i++) {
+      if (i === 0) {
+        lastResult = await this.prepareRouterView(parents[i], rootRouterView);
+      } else if (lastResult?.dom && "querySelector" in lastResult.dom) {
+        const el = lastResult.dom.querySelector(DomilyRouterView.name);
+        lastResult = await this.prepareRouterView(parents[i], el);
+      }
+    }
   }
 
   prepareHashRoute() {
@@ -35,10 +90,8 @@ export class DomilyRouter {
         globalThis.location.hash = "#/";
       }
       if (!hashChangeEventListenerAdded) {
-        globalThis.addEventListener("hashchange", () => {
-          GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
-          this.currentRoute = this.match();
-          this.currentRoute?.render();
+        globalThis.addEventListener("hashchange", async () => {
+          await this.matchPage();
         });
         hashChangeEventListenerAdded = true;
       }
@@ -51,11 +104,20 @@ export class DomilyRouter {
         ? globalThis.location.pathname
         : globalThis.location.hash.slice(1);
 
-    const matched = matchRoute(this.routes, pathname);
+    const matched = matchRoute(
+      Object.values(this.app.routesPathFlatMap),
+      pathname
+    );
     if (!matched) {
       return this.app.routesPathMap["/*"];
     }
     return matched;
+  }
+
+  async matchPage() {
+    GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
+    this.currentRoute = this.match();
+    await this.deepRender(this.currentRoute);
   }
 
   public resolve(options: IRouterOptions) {
@@ -74,10 +136,13 @@ export class DomilyRouter {
 }
 
 export class DomilyRouterView extends HTMLElement {
+  static name = "router-view";
   constructor() {
     super();
   }
 
-  connectedCallback() {}
+  connectedCallback() {
+    this.appendChild(document.createElement("slot"));
+  }
   disconnectedCallback() {}
 }

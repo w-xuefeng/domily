@@ -1,6 +1,13 @@
 import { DomilyAppSchemaDefault } from "../../config";
+import { $el } from "../../utils/dom";
+import { combinePaths } from "../router/match";
 import { DomilyRouter } from "../router/router";
+import { parseComponent } from "./component";
 import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
+import DomilyRenderSchema, {
+  DOMilyRenderReturnType,
+  IDomilyRenderSchema,
+} from "./render";
 
 export const DomilyAppInstances = new Map<string | symbol, DomilyAppSchema>();
 
@@ -15,6 +22,10 @@ export type TDomilyAppSchema<
   mode?: "SPA" | "MPA";
   routerMode?: "hash" | "history";
   routes?: IDomilyPageSchema<any>[];
+  app:
+    | DomilyRenderSchema<any, any>
+    | IDomilyRenderSchema<any, any>
+    | DOMilyRenderReturnType<any, any>;
 };
 
 export default class DomilyAppSchema<
@@ -29,6 +40,10 @@ export default class DomilyAppSchema<
   globalProperties: GlobalProperties;
   routes: DomilyPageSchema<any>[] = [];
   router: DomilyRouter;
+  app: () =>
+    | DomilyRenderSchema<any, any>
+    | IDomilyRenderSchema<any, any>
+    | DOMilyRenderReturnType<any, any>;
 
   constructor(schema: TDomilyAppSchema<GlobalProperties>) {
     this.namespace = schema.namespace;
@@ -40,6 +55,7 @@ export default class DomilyAppSchema<
     this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
     this.routes =
       schema.routes?.map((e) => DomilyPageSchema.create(e, this)) || [];
+    this.app = () => schema.app;
     this.router = new DomilyRouter(this);
     DomilyAppInstances.set(this.namespace, this);
   }
@@ -50,18 +66,24 @@ export default class DomilyAppSchema<
     return new DomilyAppSchema(schema);
   }
 
-  use() {}
-
   get routesPathMap() {
     return Object.fromEntries(this.routes.map((e) => [e.path, e]));
   }
   get routesPathFlatMap() {
-    const result: Record<string, DomilyPageSchema<any>> = {};
-    const getChildRoutes = (routes: DomilyPageSchema<any>[]) => {
+    const result: Record<
+      string,
+      DomilyPageSchema<any> & { parent?: DomilyPageSchema<any> | null }
+    > = {};
+    const getChildRoutes = (
+      routes: DomilyPageSchema<any>[],
+      parent: DomilyPageSchema<any> | null = null
+    ) => {
       routes.forEach((e) => {
-        result[e.path] = e;
+        result[combinePaths(parent?.path, e.path)] = Object.assign(e, {
+          parent,
+        });
         if (e.children) {
-          getChildRoutes(e.children);
+          getChildRoutes(e.children, e);
         }
       });
     };
@@ -74,12 +96,20 @@ export default class DomilyAppSchema<
   }
 
   get routesNameFlatMap() {
-    const result: Record<string, DomilyPageSchema<any>> = {};
-    const getChildRoutes = (routes: DomilyPageSchema<any>[]) => {
+    const result: Record<
+      string,
+      DomilyPageSchema<any> & { parent?: DomilyPageSchema<any> | null }
+    > = {};
+    const getChildRoutes = (
+      routes: DomilyPageSchema<any>[],
+      parent: DomilyPageSchema<any> | null = null
+    ) => {
       routes.forEach((e) => {
-        result[e.name || e.path] = e;
+        result[e.name || e.path] = Object.assign(e, {
+          parent,
+        });
         if (e.children) {
-          getChildRoutes(e.children);
+          getChildRoutes(e.children, e);
         }
       });
     };
@@ -96,15 +126,16 @@ export function app<
   GlobalProperties extends Record<string, any> = Record<string, any>
 >(schema: TDomilyAppSchema<GlobalProperties>) {
   const appInstance = DomilyAppSchema.create<GlobalProperties>(schema);
-
+  const comp = parseComponent(appInstance.app);
   return {
     app: appInstance,
     mount(parent?: HTMLElement | Document | ShadowRoot | string) {
-      const currentPage = appInstance.router.currentRoute;
-      if (!currentPage) {
-        return;
-      }
-      return currentPage.render(parent);
+      comp.mount(parent || appInstance.el);
+      appInstance.router.setRoot($el<HTMLElement>(parent || appInstance.el));
+      appInstance.router.matchPage();
+      return () => {
+        comp.unmount();
+      };
     },
   };
 }

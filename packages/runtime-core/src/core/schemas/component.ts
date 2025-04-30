@@ -23,6 +23,11 @@ export interface DOMilyComponent {
 
 export type AsyncDOMilyComponentModule = Promise<{ default: DOMilyComponent }>;
 
+export const DomilyComponentWeakMap = new WeakMap<
+  Function,
+  DOMilyRenderReturnType<any, any>
+>();
+
 export function parseDomilyComponent(
   comp:
     | DomilyRenderSchema
@@ -77,13 +82,24 @@ export function parseDomilyComponent(
   return node;
 }
 
-export function parseComponent(functionComponent: DOMilyComponent) {
+export function parseComponent(
+  functionComponent: DOMilyComponent,
+  nocache = false
+) {
+  const cache = DomilyComponentWeakMap.get(functionComponent);
+  if (cache && !nocache) {
+    return cache;
+  }
   const comp = functionComponent();
   if ("name" in comp && "customElementComponent" in comp) {
-    return parseDomilyComponent(comp.customElementComponent, {
+    const result = parseDomilyComponent(comp.customElementComponent, {
       enable: true,
       name: comp.name,
     });
+    DomilyComponentWeakMap.set(functionComponent, result);
+    return result;
   }
-  return parseDomilyComponent(comp);
+  const result = parseDomilyComponent(comp);
+  DomilyComponentWeakMap.set(functionComponent, result);
+  return result;
 }

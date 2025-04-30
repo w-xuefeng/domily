@@ -9,7 +9,6 @@ import {
 import { type DOMilyRenderReturnType } from "./render";
 
 export interface IDomilyPageSchema<PageMeta = {}> {
-  el?: string | HTMLElement;
   name?: string;
   namespace?: string | symbol;
   path: string;
@@ -21,7 +20,6 @@ export interface IDomilyPageSchema<PageMeta = {}> {
 }
 
 export default class DomilyPageSchema<PageMeta = {}> {
-  el?: string | HTMLElement;
   name?: string;
   namespace: string | symbol;
   app: DomilyAppSchema<any>;
@@ -33,16 +31,18 @@ export default class DomilyPageSchema<PageMeta = {}> {
   children?: DomilyPageSchema<unknown>[];
   private functionComponent: DOMilyComponent | null = null;
   private asyncComponentLoading = false;
-  private dom: HTMLElement | Node | null = null;
 
   constructor(schema: IDomilyPageSchema<PageMeta>, app?: DomilyAppSchema<any>) {
-    this.el = schema.el;
     this.name = schema.name;
     this.namespace = schema.namespace || Symbol("DomilyAppNamespace");
     this.app =
       app ||
       DomilyAppInstances.get(this.namespace) ||
-      new DomilyAppSchema<any>({ namespace: this.namespace, routes: [schema] });
+      new DomilyAppSchema<any>({
+        namespace: this.namespace,
+        routes: [schema],
+        app: { tag: "router-view" },
+      });
     this.path = `${this.app.basePath || ""}${schema.path}`;
     this.alias = schema.alias;
     this.component = schema.component;
@@ -62,10 +62,10 @@ export default class DomilyPageSchema<PageMeta = {}> {
 
   #toView(
     component: DOMilyComponent,
-    el?: HTMLElement | Document | ShadowRoot | string
+    el: HTMLElement | Document | ShadowRoot | string
   ) {
-    const comp = parseComponent(component);
-    comp.mount(el || this.el || this.app.el);
+    const comp = parseComponent(component, true);
+    comp.mount(el);
     GLobalPageRouterStoreArray.push(
       Object.assign(this, {
         comp,
@@ -74,7 +74,7 @@ export default class DomilyPageSchema<PageMeta = {}> {
     return comp;
   }
 
-  render(el?: HTMLElement | Document | ShadowRoot | string) {
+  render(el: HTMLElement | Document | ShadowRoot | string) {
     const { resolve, reject, promise } =
       Promise.withResolvers<DOMilyRenderReturnType<any, any> | null>();
 
@@ -119,7 +119,7 @@ export function page<PageMeta = {}>(
 
   return {
     page: pageInstance,
-    mount(parent?: HTMLElement | Document | ShadowRoot | string) {
+    mount(parent: HTMLElement | Document | ShadowRoot | string) {
       return pageInstance.render(parent);
     },
   };
