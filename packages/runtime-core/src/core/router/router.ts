@@ -45,7 +45,7 @@ export class DomilyRouter {
     this.routes = app.routes;
     this.mode = app.routerMode;
     this.defineRouterView();
-    this.prepareHashRoute();
+    this.prepareRoute();
     this.currentRoute = this.match();
   }
 
@@ -96,13 +96,18 @@ export class DomilyRouter {
       if (i === 0) {
         lastResult = await this.prepareRouterView(parents[i], rootRouterView);
       } else if (lastResult?.dom && "querySelector" in lastResult.dom) {
-        const el = lastResult.dom.querySelector(DomilyRouterView.name);
+        const el = (lastResult.dom as HTMLElement).querySelector<HTMLElement>(
+          DomilyRouterView.name
+        );
+        if (!el) {
+          return;
+        }
         lastResult = await this.prepareRouterView(parents[i], el);
       }
     }
   }
 
-  prepareHashRoute() {
+  prepareRoute() {
     if (this.mode === "hash") {
       if (!globalThis.location.hash) {
         globalThis.location.hash = "#/";
