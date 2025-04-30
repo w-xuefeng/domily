@@ -8,9 +8,7 @@
   "scripts": {
     "build:rc": "bun --filter @domily/runtime-core build",
     "test:vp": "bun --filter vite-plugin-domily test",
-    "build:vp-test": "bun --filter vite-plugin-domily test:build",
-    "yp": "bun build:rc && cd packages/runtime-core && yalc publish",
-    "ya": "cd packages/vite-plugin-domily && yalc add @domily/runtime-core"
+    "build:vp-test": "bun --filter vite-plugin-domily test:build"
   },
   "devDependencies": {
     "@types/bun": "latest"
