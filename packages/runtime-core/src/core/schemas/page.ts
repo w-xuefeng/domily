@@ -1,4 +1,5 @@
 import { isFunction, isThenable } from "../../utils/is";
+import { DOMilyMountableRender } from "../render";
 import { GLobalPageRouterStoreArray } from "../router/router";
 import DomilyAppSchema, { DomilyAppInstances } from "./app";
 import {
@@ -6,7 +7,6 @@ import {
   type AsyncDOMilyComponentModule,
   parseComponent,
 } from "./component";
-import { type DOMilyRenderReturnType } from "./render";
 
 export interface IDomilyPageSchema<PageMeta = {}> {
   name?: string;
@@ -65,6 +65,9 @@ export default class DomilyPageSchema<PageMeta = {}> {
     el: HTMLElement | Document | ShadowRoot | string
   ) {
     const comp = parseComponent(component, true);
+    if (!comp) {
+      return null;
+    }
     comp.mount(el);
     GLobalPageRouterStoreArray.push(
       Object.assign(this, {
@@ -76,7 +79,7 @@ export default class DomilyPageSchema<PageMeta = {}> {
 
   render(el: HTMLElement | Document | ShadowRoot | string) {
     const { resolve, reject, promise } =
-      Promise.withResolvers<DOMilyRenderReturnType<any, any> | null>();
+      Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
 
     if (this.redirect) {
       const { path, name } = this.redirect;

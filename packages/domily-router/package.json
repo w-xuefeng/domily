@@ -1,0 +1,23 @@
+{
+  "name": "domily-router",
+  "type": "module",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/types/index.d.ts",
+  "scripts": {
+    "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json"
+  },
+  "exports": {
+    ".": {
+      "import": "./lib/index.esm.js",
+      "require": "./lib/index.cjs.js",
+      "types": "./lib/types/index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

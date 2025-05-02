@@ -1,11 +1,12 @@
+import { DOMilyMountableRender } from "../render";
 import DomilyAppSchema from "../schemas/app";
-import type { DOMilyRenderReturnType } from "../schemas/render";
+
 import { type IRouterConfig, type IMatchedRoute, matchRoute } from "./match";
 
 let hashChangeEventListenerAdded = false;
 
 export const GLobalPageRouterStoreArray: (IMatchedRoute & {
-  comp: DOMilyRenderReturnType<any, any>;
+  comp: DOMilyMountableRender<any, any>;
 })[] = [];
 
 export const GLobalPageRouterRenderingQueue: (() => Promise<any>)[] = [];
@@ -91,7 +92,7 @@ export class DomilyRouter {
     };
     getParents(matched);
 
-    let lastResult: DOMilyRenderReturnType<any, any> | null = null;
+    let lastResult: DOMilyMountableRender<any, any> | null = null;
     for (let i = 0; i < parents.length; i++) {
       if (i === 0) {
         lastResult = await this.prepareRouterView(parents[i], rootRouterView);
@@ -114,7 +115,7 @@ export class DomilyRouter {
       }
       if (!hashChangeEventListenerAdded) {
         globalThis.addEventListener("hashchange", async () => {
-          await this.matchPage();
+          this.matchPage();
         });
         hashChangeEventListenerAdded = true;
       }
@@ -142,6 +143,10 @@ export class DomilyRouter {
       new Promise<void>((resolve) => {
         GLobalPageRouterStoreArray.at(-1)?.comp.unmount();
         this.currentRoute = this.match();
+        console.log(
+          "🚀 ~ DomilyRouter ~ matchPage ~ this.currentRoute:",
+          this.currentRoute
+        );
         this.deepRender(this.currentRoute).finally(resolve);
       });
     GLobalPageRouterRenderingQueue.push(renderPromise);

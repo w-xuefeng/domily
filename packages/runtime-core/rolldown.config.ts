@@ -1,4 +1,4 @@
-import { defineConfig } from "rolldown";
+import { defineConfig, type RolldownOptions } from "rolldown";
 import terser from "@rollup/plugin-terser";
 
 export default defineConfig([
@@ -16,7 +16,7 @@ export default defineConfig([
         dir: "lib",
         format: "esm",
         entryFileNames: "[name].esm.js",
-        plugins: [terser()],
+        // plugins: [terser()],
       },
       {
         dir: "lib",
@@ -25,5 +25,5 @@ export default defineConfig([
         plugins: [terser()],
       },
     ],
-  },
+  } as RolldownOptions,
 ]);

@@ -1,13 +1,11 @@
 import { DomilyAppSchemaDefault } from "../../config";
 import { $el } from "../../utils/dom";
+import { DOMilyChild, DOMilyMountableRender } from "../render";
+import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 import { combinePaths } from "../router/match";
 import { DomilyRouter } from "../router/router";
 import { parseComponent } from "./component";
 import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
-import DomilyRenderSchema, {
-  DOMilyRenderReturnType,
-  IDomilyRenderSchema,
-} from "./render";
 
 export const DomilyAppInstances = new Map<string | symbol, DomilyAppSchema>();
 
@@ -22,10 +20,7 @@ export type TDomilyAppSchema<
   mode?: "SPA" | "MPA";
   routerMode?: "hash" | "history";
   routes?: IDomilyPageSchema<any>[];
-  app:
-    | DomilyRenderSchema<any, any>
-    | IDomilyRenderSchema<any, any>
-    | DOMilyRenderReturnType<any, any>;
+  app: DOMilyChild;
 };
 
 export default class DomilyAppSchema<
@@ -40,10 +35,7 @@ export default class DomilyAppSchema<
   globalProperties: GlobalProperties;
   routes: DomilyPageSchema<any>[] = [];
   router: DomilyRouter;
-  app: () =>
-    | DomilyRenderSchema<any, any>
-    | IDomilyRenderSchema<any, any>
-    | DOMilyRenderReturnType<any, any>;
+  app: () => DOMilyMountableRender<any, any> | null;
 
   constructor(schema: TDomilyAppSchema<GlobalProperties>) {
     this.namespace = schema.namespace;
@@ -55,7 +47,7 @@ export default class DomilyAppSchema<
     this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
     this.routes =
       schema.routes?.map((e) => DomilyPageSchema.create(e, this)) || [];
-    this.app = () => schema.app;
+    this.app = () => domilyChildToDOMilyMountableRender(schema.app);
     this.router = new DomilyRouter(this);
     DomilyAppInstances.set(this.namespace, this);
   }
@@ -126,10 +118,13 @@ export function app<
   GlobalProperties extends Record<string, any> = Record<string, any>
 >(schema: TDomilyAppSchema<GlobalProperties>) {
   const appInstance = DomilyAppSchema.create<GlobalProperties>(schema);
-  const comp = parseComponent(appInstance.app);
+  const comp = appInstance.app();
   return {
     app: appInstance,
     mount(parent?: HTMLElement | Document | ShadowRoot | string) {
+      if (!comp) {
+        return null;
+      }
       comp.mount(parent || appInstance.el);
       appInstance.router.setRoot($el<HTMLElement>(parent || appInstance.el));
       appInstance.router.matchPage();

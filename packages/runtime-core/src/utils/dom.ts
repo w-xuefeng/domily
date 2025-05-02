@@ -1,10 +1,11 @@
-import DomilyRenderSchema from "../core/schemas/render";
+import DomilyRenderSchema from "../core/render/schema";
 import type {
   WithCustomElementTagNameMap,
   TDomilyRenderProperties,
-  TSvgElementNameMap,
-} from "../core/types/tags";
-import { DomilyFragment } from "./custom-element";
+  TSvgElementTagNameMap,
+  DOMilyChildren,
+} from "../core/render/type/types";
+import DomilyFragment from "../core/render/custom-elements/fragment";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
@@ -203,7 +204,7 @@ export function camelToKebab(str: string): string {
     .replace(/^-/, "");
 }
 
-export function f(children: (HTMLElement | Node | string | null)[] = []) {
+export function f(children: DOMilyChildren = []) {
   const F = customElements.get(DomilyFragment.name);
   if (!F) {
     customElements.define(DomilyFragment.name, DomilyFragment);
@@ -214,6 +215,11 @@ export function f(children: (HTMLElement | Node | string | null)[] = []) {
 
 export function c(data: string) {
   const comment = document.createComment(data);
+  return comment;
+}
+
+export function txt(data: string) {
+  const comment = document.createTextNode(data);
   return comment;
 }
 
@@ -291,6 +297,9 @@ export function internalCreateElement<P>(
 export function isSvgTag<K extends keyof WithCustomElementTagNameMap>(
   tagName: K
 ) {
+  if (typeof tagName !== "string") {
+    return false;
+  }
   return tagName === "svg" || tagName.startsWith("SVG:");
 }
 
@@ -303,14 +312,19 @@ export function h<
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
 ): WithCustomElementTagNameMap<CustomTagNameMap>[K];
 
-export function h<K extends keyof (TSvgElementNameMap & HTMLElementTagNameMap)>(
+export function h<
+  K extends keyof (TSvgElementTagNameMap & HTMLElementTagNameMap)
+>(
   tagName: K,
   properties?: TDomilyRenderProperties<
-    TSvgElementNameMap & HTMLElementTagNameMap,
+    TSvgElementTagNameMap & HTMLElementTagNameMap,
     K
   > | null,
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
 ) {
+  if (typeof tagName !== "string") {
+    return null;
+  }
   const creator = isSvgTag(tagName)
     ? () => document.createElementNS(svgNamespace, tagName.replace(/^SVG:/, ""))
     : () => document.createElement(tagName);
@@ -364,56 +378,6 @@ export function proxyDomilySchema(
       const currentDOM = targetObject.dom;
       const nextDOM = domilySchema.render();
       targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      // if (currentDOM && nextDOM) {
-      //   /**
-      //    * modify
-      //    */
-      //   targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      // } else if (currentDOM && !nextDOM) {
-      //   /**
-      //    * remove
-      //    */
-      //   // eventBus.emit(EVENTS.DOM_SNAPSHOT, currentDOM.parentElement);
-      //   targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      // } else if (!currentDOM && nextDOM) {
-      //   /**
-      //    * insert (recover)
-      //    */
-      //   if (
-      //     domilySchema.parentElement &&
-      //     domilySchema.nextSibling &&
-      //     domilySchema.parentElement.contains(domilySchema.nextSibling)
-      //   ) {
-      //     domilySchema.parentElement.insertBefore(
-      //       nextDOM,
-      //       domilySchema.nextSibling
-      //     );
-      //   } else if (
-      //     domilySchema.parentElement &&
-      //     domilySchema.previousSibling &&
-      //     domilySchema.parentElement.contains(domilySchema.previousSibling)
-      //   ) {
-      //     domilySchema.parentElement.insertBefore(
-      //       nextDOM,
-      //       domilySchema.previousSibling.nextSibling
-      //     );
-      //   } else if (
-      //     domilySchema.parentElement &&
-      //     domilySchema.index > -1 &&
-      //     domilySchema.index < domilySchema.parentElement.childNodes.length
-      //   ) {
-      //     domilySchema.parentElement.insertBefore(
-      //       nextDOM,
-      //       domilySchema.parentElement.childNodes[domilySchema.index]
-      //     );
-      //   } else if (
-      //     domilySchema.parentElement &&
-      //     domilySchema.index >= domilySchema.parentElement.childNodes.length
-      //   ) {
-      //     domilySchema.parentElement.appendChild(nextDOM);
-      //   }
-      //   targetObject.dom = nextDOM;
-      // }
       return rs;
     },
   });

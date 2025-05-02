@@ -1,3 +1,11 @@
+import {
+  CustomParamsToMap,
+  OptionalWith,
+  render,
+  type DOMilyMountableRender,
+  type DOMilyTags,
+  type IDomilyRenderOptions,
+} from "./core/render";
 import DomilyAppSchema, {
   app,
   type TDomilyAppSchema,
@@ -6,19 +14,10 @@ import DomilyPageSchema, {
   page,
   type IDomilyPageSchema,
 } from "./core/schemas/page";
-import {
-  type IDomilyRenderSchema,
-  type DOMilyTags,
-  type DOMilyRenderReturnType,
-  type DOMilyFragmentReturnType,
-  render,
-  fragment,
-} from "./core/schemas/render";
-import type { OptionalWith, CustomParamsToMap } from "./core/types/tags";
 import { HTMLNodeNameMap, SVGElementNameMap } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
-export * from "./core/schemas/render";
+export * from "./core/render";
 export * from "./core/schemas/component";
 export * from "./core/schemas/app";
 export * from "./core/schemas/page";
@@ -30,7 +29,7 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
     app: DomilyAppSchema<GlobalProperties>;
     mount(
       parent?: HTMLElement | Document | ShadowRoot | string
-    ): Promise<DOMilyRenderReturnType<any, any>> | undefined;
+    ): Promise<DOMilyMountableRender<any, any>> | undefined;
   };
   page<PageMeta = {}>(
     schema: IDomilyPageSchema<PageMeta>,
@@ -39,17 +38,11 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
     page: DomilyPageSchema<PageMeta>;
     mount(
       parent?: HTMLElement | Document | ShadowRoot | string
-    ): Promise<DOMilyRenderReturnType<any, any>>;
+    ): Promise<DOMilyMountableRender<any, any>>;
   };
   render: <K extends DOMilyTags<CustomTagNameMap>>(
-    schema: IDomilyRenderSchema<CustomTagNameMap, K>
-  ) => DOMilyRenderReturnType<CustomTagNameMap, K>;
-  fragment: (
-    children: (
-      | IDomilyRenderSchema<any, any>
-      | DOMilyRenderReturnType<any, any>
-    )[]
-  ) => DOMilyFragmentReturnType;
+    schema: IDomilyRenderOptions<CustomTagNameMap, K>
+  ) => DOMilyMountableRender<CustomTagNameMap, K>;
   registerElement<T extends string>(
     tag: T,
     constructor?: CustomElementConstructor | undefined
@@ -62,8 +55,8 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
 
 export type DOMily<CustomTagNameMap = {}> = {
   [T in DOMilyTags<CustomTagNameMap>]: (
-    schema?: Omit<IDomilyRenderSchema<CustomTagNameMap, T>, "tag">
-  ) => DOMilyRenderReturnType<CustomTagNameMap, T>;
+    schema?: Omit<IDomilyRenderOptions<CustomTagNameMap, T>, "tag">
+  ) => DOMilyMountableRender<CustomTagNameMap, T>;
 } & DOMilyBase<CustomTagNameMap>;
 
 function builtinDomily() {
@@ -71,7 +64,6 @@ function builtinDomily() {
     app,
     page,
     render,
-    fragment,
     registerElement<T extends string>(
       tag: T,
       constructor?: CustomElementConstructor | undefined
@@ -102,6 +94,10 @@ function builtinDomily() {
    * register RouterView
    */
   Domily.registerElement(`router-view`);
+  /**
+   * register fragment
+   */
+  Domily.registerElement(`fragment`);
   return Domily as unknown as DOMily;
 }
 

@@ -10,7 +10,7 @@
     },
     {
       "tag": "svg",
-      "events": {
+      "on": {
         "click": "@handleClick"
       },
       "attrs": {
