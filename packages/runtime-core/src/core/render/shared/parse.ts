@@ -17,7 +17,14 @@ import type {
 export function isDomilyRenderSchema(
   obj: object
 ): obj is DomilyRenderSchema<any, any> {
-  return obj instanceof DomilyRenderSchema;
+  return (
+    obj instanceof DomilyRenderSchema ||
+    ("render" in obj &&
+      "tag" in obj &&
+      isFunction(obj.render) &&
+      typeof obj.tag === "string" &&
+      !!obj.tag.trim())
+  );
 }
 
 /**

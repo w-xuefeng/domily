@@ -1,26 +1,25 @@
 import {
   CustomParamsToMap,
   OptionalWith,
+  registerElement,
   render,
   type DOMilyMountableRender,
   type DOMilyTags,
   type IDomilyRenderOptions,
 } from "./core/render";
-import DomilyAppSchema, {
-  app,
-  type TDomilyAppSchema,
-} from "./core/schemas/app";
-import DomilyPageSchema, {
-  page,
-  type IDomilyPageSchema,
-} from "./core/schemas/page";
+import DomilyAppSchema, { app, type TDomilyAppSchema } from "./core/app";
 import { HTMLNodeNameMap, SVGElementNameMap } from "./utils/tags";
 
 export * as DOMUtils from "./utils/dom";
+export * as EB from "./utils/event-bus";
+export * as ISUtils from "./utils/is";
+export * as OBJUtils from "./utils/obj";
+export * as TAGSUtils from "./utils/tags";
 export * from "./core/render";
-export * from "./core/schemas/component";
-export * from "./core/schemas/app";
-export * from "./core/schemas/page";
+export * from "./core/component";
+
+export * from "./core/app";
+export { default as DomilyAppSchema } from "./core/app";
 
 export type DOMilyBase<CustomTagNameMap = {}> = {
   app<GlobalProperties extends Record<string, any> = Record<string, any>>(
@@ -29,16 +28,7 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
     app: DomilyAppSchema<GlobalProperties>;
     mount(
       parent?: HTMLElement | Document | ShadowRoot | string
-    ): Promise<DOMilyMountableRender<any, any>> | undefined;
-  };
-  page<PageMeta = {}>(
-    schema: IDomilyPageSchema<PageMeta>,
-    app?: DomilyAppSchema<any>
-  ): {
-    page: DomilyPageSchema<PageMeta>;
-    mount(
-      parent?: HTMLElement | Document | ShadowRoot | string
-    ): Promise<DOMilyMountableRender<any, any>>;
+    ): (() => void) | null;
   };
   render: <K extends DOMilyTags<CustomTagNameMap>>(
     schema: IDomilyRenderOptions<CustomTagNameMap, K>
@@ -62,19 +52,12 @@ export type DOMily<CustomTagNameMap = {}> = {
 function builtinDomily() {
   const Domily = {
     app,
-    page,
     render,
     registerElement<T extends string>(
       tag: T,
       constructor?: CustomElementConstructor | undefined
     ) {
-      if (constructor && !customElements.get(tag)) {
-        customElements.define(tag, constructor);
-      }
-      Reflect.set(Domily, tag, (schema?: Record<string, any>) => {
-        return Domily.render({ ...schema, tag } as any);
-      });
-      return Domily;
+      return registerElement(Domily, tag, constructor);
     },
   };
   /**

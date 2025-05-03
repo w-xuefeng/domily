@@ -1,12 +1,16 @@
-import { isFunction, isThenable } from "../../utils/is";
-import { DOMilyMountableRender } from "../render";
-import { GLobalPageRouterStoreArray } from "../router/router";
-import DomilyAppSchema, { DomilyAppInstances } from "./app";
 import {
+  EB,
+  ISUtils,
+  parseComponent,
   type DOMilyComponent,
   type AsyncDOMilyComponentModule,
-  parseComponent,
-} from "./component";
+  type DOMilyMountableRender,
+  DomilyAppInstances,
+} from '@domily/runtime-core';
+import { ROUTER_EVENTS } from './event';
+import type { IMatchedPage } from './base';
+const { isFunction, isThenable } = ISUtils;
+const { EventBus } = EB;
 
 export interface IDomilyPageSchema<PageMeta = {}> {
   name?: string;
@@ -22,7 +26,6 @@ export interface IDomilyPageSchema<PageMeta = {}> {
 export default class DomilyPageSchema<PageMeta = {}> {
   name?: string;
   namespace: string | symbol;
-  app: DomilyAppSchema<any>;
   path: string;
   alias?: string | string[];
   component?: DOMilyComponent | AsyncDOMilyComponentModule;
@@ -32,61 +35,56 @@ export default class DomilyPageSchema<PageMeta = {}> {
   private functionComponent: DOMilyComponent | null = null;
   private asyncComponentLoading = false;
 
-  constructor(schema: IDomilyPageSchema<PageMeta>, app?: DomilyAppSchema<any>) {
+  constructor(schema: IDomilyPageSchema<PageMeta>) {
     this.name = schema.name;
-    this.namespace = schema.namespace || Symbol("DomilyAppNamespace");
-    this.app =
-      app ||
-      DomilyAppInstances.get(this.namespace) ||
-      new DomilyAppSchema<any>({
-        namespace: this.namespace,
-        routes: [schema],
-        app: { tag: "router-view" },
-      });
-    this.path = `${this.app.basePath || ""}${schema.path}`;
+    this.namespace = schema.namespace || Symbol('DomilyAppNamespace');
+    this.path = schema.path;
     this.alias = schema.alias;
     this.component = schema.component;
     this.redirect = schema.redirect;
     this.meta = schema.meta as PageMeta;
-    this.children = schema.children?.map(
-      (e) => new DomilyPageSchema<unknown>(e, this.app)
-    );
+    this.children = schema.children?.map(e => {
+      e.namespace = e.namespace ?? this.namespace;
+      return new DomilyPageSchema<unknown>(e);
+    });
   }
 
-  static create<PageMeta = {}>(
-    schema: IDomilyPageSchema<PageMeta>,
-    app?: DomilyAppSchema<any>
-  ) {
-    return new DomilyPageSchema(schema, app);
+  static create<PageMeta = {}>(schema: IDomilyPageSchema<PageMeta>) {
+    return new DomilyPageSchema(schema);
   }
 
-  #toView(
-    component: DOMilyComponent,
-    el: HTMLElement | Document | ShadowRoot | string
-  ) {
+  #toView(component: DOMilyComponent, el: HTMLElement | Document | ShadowRoot | string) {
     const comp = parseComponent(component, true);
     if (!comp) {
       return null;
     }
     comp.mount(el);
-    GLobalPageRouterStoreArray.push(
+    EventBus.emit<IMatchedPage>(
+      ROUTER_EVENTS.PAGE_MOUNTED,
       Object.assign(this, {
         comp,
-      })
+      }),
     );
     return comp;
   }
 
   render(el: HTMLElement | Document | ShadowRoot | string) {
-    const { resolve, reject, promise } =
-      Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
+    const { resolve, reject, promise } = Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
 
     if (this.redirect) {
+      const app = DomilyAppInstances.get(this.namespace);
+      if (!app || !app?.globalProperties?.$router) {
+        resolve(null);
+        return promise;
+      }
+      const router = app.globalProperties.$router;
       const { path, name } = this.redirect;
       if (path) {
-        resolve(this.app.routesPathFlatMap[path].render(el));
+        resolve(router.routesPathFlatMap[path]?.render(el) || null);
       } else if (name) {
-        resolve(this.app.routesNameFlatMap[name].render(el));
+        resolve(router.routesNameFlatMap[name]?.render(el) || null);
+      } else {
+        resolve(null);
       }
       return promise;
     }
@@ -102,6 +100,8 @@ export default class DomilyPageSchema<PageMeta = {}> {
           this.asyncComponentLoading = false;
           if (isFunction(this.functionComponent)) {
             resolve(this.#toView(this.functionComponent, el));
+          } else {
+            resolve(null);
           }
         });
     } else if (isFunction(this.component)) {
@@ -114,11 +114,8 @@ export default class DomilyPageSchema<PageMeta = {}> {
   }
 }
 
-export function page<PageMeta = {}>(
-  schema: IDomilyPageSchema<PageMeta>,
-  app?: DomilyAppSchema<any>
-) {
-  const pageInstance = DomilyPageSchema.create(schema, app);
+export function page<PageMeta = {}>(schema: IDomilyPageSchema<PageMeta>) {
+  const pageInstance = DomilyPageSchema.create(schema);
 
   return {
     page: pageInstance,
@@ -127,3 +124,12 @@ export function page<PageMeta = {}>(
     },
   };
 }
+
+// page<PageMeta = {}>(
+//   schema: IDomilyPageSchema<PageMeta>
+// ): {
+//   page: DomilyPageSchema<PageMeta>;
+//   mount(
+//     parent?: HTMLElement | Document | ShadowRoot | string
+//   ): Promise<DOMilyMountableRender<any, any> | null>;
+// };

@@ -1,5 +1,5 @@
 {
-  "name": "domily-router",
+  "name": "@domily/router",
   "type": "module",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
@@ -15,7 +15,8 @@
     }
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@domily/runtime-core": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

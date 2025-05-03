@@ -1,53 +1,54 @@
-class EventBus extends HTMLElement {
-  constructor() {
-    super();
+Reflect.set(
+  globalThis,
+  "globalEventMap",
+  Reflect.get(globalThis, "globalEventMap") || new Map<string, Function[]>()
+);
+
+const globalEventMap = Reflect.get(globalThis, "globalEventMap") as Map<
+  string,
+  Function[]
+>;
+
+export class EventBus {
+  static on<T = undefined>(eventName: string, callback: (e: T) => void) {
+    const event = globalEventMap.get(eventName);
+    if (event) {
+      event.push(callback);
+    }
+    globalEventMap.set(eventName, event || [callback]);
   }
 
-  on(
-    eventName: string,
-    callback: (e: CustomEvent<any>) => void,
-    options?: boolean | AddEventListenerOptions
-  ) {
-    this.addEventListener(eventName, callback as (e: Event) => void, options);
-  }
-
-  off(
-    eventName: string,
-    callback: (e: Event | CustomEvent) => void,
-    options?: boolean | EventListenerOptions
-  ) {
-    this.removeEventListener(eventName, callback, options);
-  }
-
-  once(
-    eventName: string,
-    callback: (e: Event | CustomEvent) => void,
-    options?: boolean | AddEventListenerOptions
-  ) {
-    this.addEventListener(
+  static off<T = undefined>(eventName: string, callback?: (e: T) => void) {
+    const event = globalEventMap.get(eventName);
+    if (!callback || !event || event.length === 0) {
+      globalEventMap.delete(eventName);
+      return;
+    }
+    globalEventMap.set(
       eventName,
-      callback,
-      Object.assign(
-        {},
-        typeof options === "object"
-          ? options
-          : {
-              capture: options,
-            },
-        {
-          once: true,
-        }
-      )
+      event.filter((e) => e !== callback)
     );
   }
 
-  emit<T>(eventName: string, value?: T) {
-    this.dispatchEvent(new CustomEvent(eventName, { detail: value }));
+  static once<T = undefined>(eventName: string, callback: (e: T) => void) {
+    const proxyCallback = (e: T) => {
+      callback(e);
+      this.off(eventName, proxyCallback);
+    };
+    this.on(eventName, proxyCallback);
+  }
+
+  static emit<T = undefined>(eventName: string, value: T) {
+    const event = globalEventMap.get(eventName);
+    if (!event) {
+      return;
+    }
+    event.forEach((e) => {
+      e(value);
+    });
   }
 }
 
-customElements.define("event-bus", EventBus);
-
-export const EVENTS = {};
-
-export const eventBus = new EventBus();
+export const EVENTS = {
+  APP_MOUNTED: "app-mounted",
+};

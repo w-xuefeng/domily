@@ -6,6 +6,7 @@ import type {
   DOMilyChildren,
 } from "../core/render/type/types";
 import DomilyFragment from "../core/render/custom-elements/fragment";
+import DomilyRouterView from "../core/render/custom-elements/router-view";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
@@ -211,6 +212,15 @@ export function f(children: DOMilyChildren = []) {
     return new DomilyFragment(children);
   }
   return new F(children);
+}
+
+export function rv(children: DOMilyChildren = []) {
+  const RV = customElements.get(DomilyRouterView.name);
+  if (!RV) {
+    customElements.define(DomilyRouterView.name, DomilyRouterView);
+    return new DomilyRouterView();
+  }
+  return new RV(children);
 }
 
 export function c(data: string) {
@@ -434,6 +444,8 @@ export function mountable<
   K extends string,
   T extends {
     [k in K]: HTMLElement | Node | null;
+  } & {
+    schema: DomilyRenderSchema<any, any>;
   }
 >(data: T, domKey = "dom" as K) {
   return {

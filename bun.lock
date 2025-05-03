@@ -11,8 +11,9 @@
       },
     },
     "packages/domily-router": {
-      "name": "domily-router",
+      "name": "@domily/router",
       "devDependencies": {
+        "@domily/runtime-core": "workspace:*",
         "@types/bun": "latest",
       },
       "peerDependencies": {
@@ -39,6 +40,7 @@
         "@swc/core": "^1.11.22",
       },
       "devDependencies": {
+        "@domily/router": "workspace:*",
         "@domily/runtime-core": "workspace:*",
         "@types/less": "^3.0.8",
         "@types/node": "^22.15.2",
@@ -50,6 +52,8 @@
     },
   },
   "packages": {
+    "@domily/router": ["@domily/router@workspace:packages/domily-router"],
+
     "@domily/runtime-core": ["@domily/runtime-core@workspace:packages/runtime-core"],
 
     "@emnapi/core": ["@emnapi/core@1.4.3", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.2", "tslib": "^2.4.0" } }, "sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g=="],
@@ -303,8 +307,6 @@
     "define-lazy-prop": ["define-lazy-prop@3.0.0", "", {}, "sha512-N+MeXYoqr3pOgn8xfyRPREN7gHakLYjhsHhWGT3fWAiL4IkAt0iDw14QiiEm2bE30c5XX5q0FtAA3CK5f9/BUg=="],
 
     "detect-libc": ["detect-libc@1.0.3", "", { "bin": { "detect-libc": "./bin/detect-libc.js" } }, "sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg=="],
-
-    "domily-router": ["domily-router@workspace:packages/domily-router"],
 
     "eastasianwidth": ["eastasianwidth@0.2.0", "", {}, "sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA=="],
 

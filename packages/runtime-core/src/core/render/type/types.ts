@@ -1,4 +1,5 @@
 import DomilyFragment from "../custom-elements/fragment";
+import DomilyRouterView from "../custom-elements/router-view";
 import type DomilyRenderSchema from "../schema";
 
 /**
@@ -8,6 +9,7 @@ export interface IExtraTagNameMap {
   text: Text;
   comment: Comment;
   fragment: DomilyFragment;
+  "router-view": DomilyRouterView;
 }
 
 export type TSvgElementTagNameMap = {

@@ -9,9 +9,11 @@ import type {
   IDomilyRenderOptions,
   TDomilyRenderProperties,
 } from "./type/types";
-import { c, f, h, mountable, txt } from "../../utils/dom";
+import { c, f, h, mountable, rv, txt } from "../../utils/dom";
 import { merge } from "../../utils/obj";
 import { domilyChildToDOM } from "./shared/parse";
+import DomilyFragment from "./custom-elements/fragment";
+import DomilyRouterView from "./custom-elements/router-view";
 
 export default class DomilyRenderSchema<
   CustomElementMap = {},
@@ -319,8 +321,12 @@ export default class DomilyRenderSchema<
       return c(String(this.text ?? "domily-comment"));
     }
 
-    if (this.tag === "fragment") {
+    if (this.tag === DomilyFragment.name) {
       return f(this.children);
+    }
+
+    if (this.tag === DomilyRouterView.name) {
+      return rv(this.children);
     }
 
     const css = this.handleCSS();
@@ -370,4 +376,18 @@ export function render<K extends DOMilyTags>(
     "dom"
   );
   return returnValue;
+}
+
+export function registerElement<ThisArgs extends object, T extends string>(
+  thisArgs: ThisArgs,
+  tag: T,
+  constructor?: CustomElementConstructor | undefined
+) {
+  if (constructor && !customElements.get(tag)) {
+    customElements.define(tag, constructor);
+  }
+  Reflect.set(thisArgs, tag, (schema?: Record<string, any>) => {
+    return render({ ...schema, tag } as any);
+  });
+  return thisArgs;
 }
