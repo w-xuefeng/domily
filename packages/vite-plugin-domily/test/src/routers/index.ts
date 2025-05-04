@@ -1,8 +1,8 @@
-import { createHashRouter } from "@domily/router";
+import { createHashRouter, createHistoryRouter } from "@domily/router";
 import { routes } from "./router";
 
 const router = (namespace: string) => {
-  const router = createHashRouter({
+  const router = createHistoryRouter({
     base: "/",
     routes: routes(namespace),
   });

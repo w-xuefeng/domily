@@ -181,11 +181,11 @@ export default abstract class DomilyRouterBase {
 
   async deepRender(matched?: IMatchedRoute | null) {
     if (!this.root || !matched) {
-      return;
+      return false;
     }
     const rootRouterView = this.root.querySelector<HTMLElement>(DomilyRouterView.name);
     if (!rootRouterView) {
-      return;
+      return false;
     }
     const parents: IMatchedRoute[] = [matched];
     const getParents = (matched: IMatchedRoute) => {
@@ -201,19 +201,20 @@ export default abstract class DomilyRouterBase {
         lastResult = await this.prepareRouterView(parents[i]!, rootRouterView);
       } else if (lastResult?.dom && 'querySelector' in lastResult.dom) {
         const el = (lastResult.dom as HTMLElement).querySelector<HTMLElement>(DomilyRouterView.name);
-        if (!el) {
-          return;
+        if (el) {
+          lastResult = await this.prepareRouterView(parents[i]!, el);
         }
-        lastResult = await this.prepareRouterView(parents[i]!, el);
       }
     }
+    return true;
   }
 
   match(pathname?: string): IMatchedRoute {
     pathname =
-      pathname || this.mode === 'history'
+      pathname ||
+      (this.mode === 'history'
         ? globalThis.location.href.replace(globalThis.location.origin, '')
-        : globalThis.location.hash.slice(1);
+        : globalThis.location.hash.slice(1));
     const matched = matchRoute(Object.values(this.routesPathFlatMap), pathname);
     if (!matched) {
       const wildcard = this.routesPathMap['/*'];
@@ -222,7 +223,14 @@ export default abstract class DomilyRouterBase {
     return Object.assign(matched, generateFullUrl(matched.path, matched, this.mode));
   }
 
-  matchPage(pathname?: string, withoutHistory = false) {
+  matchPage(
+    pathname?: string,
+    withoutHistory = false,
+    callbacks?: {
+      afterMatched?: (matched?: IMatchedRoute | null) => void;
+      afterRendered?: (rendered: boolean, matched?: IMatchedRoute | null) => void;
+    },
+  ) {
     const renderPromise = () =>
       new Promise<void>(resolve => {
         const from = this.GLobalPageRouterHistoryStoreArray.at(-1);
@@ -250,13 +258,22 @@ export default abstract class DomilyRouterBase {
         } else {
           this.currentRoute = matched;
         }
+        if (ISUtils.isFunction(callbacks?.afterMatched)) {
+          callbacks.afterMatched(this.currentRoute);
+        }
         from?.comp.unmount();
-        this.deepRender(this.currentRoute).finally(resolve);
-        if (matched && !withoutHistory) {
-          if (!matched.fullPath) {
+        this.deepRender(this.currentRoute)
+          .then(rendered => {
+            if (ISUtils.isFunction(callbacks?.afterRendered)) {
+              callbacks.afterRendered(rendered, this.currentRoute);
+            }
+          })
+          .finally(resolve);
+        if (this.currentRoute && !withoutHistory) {
+          if (!this.currentRoute.fullPath) {
             return;
           }
-          this.GLobalPagePathHistoryStoreArray.push(matched.fullPath);
+          this.GLobalPagePathHistoryStoreArray.push(this.currentRoute.fullPath);
           this.GLobalPagePathHistoryStoreArrayCursor = this.GLobalPagePathHistoryStoreArray.length - 1;
         }
       });
