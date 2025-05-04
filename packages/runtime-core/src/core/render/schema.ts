@@ -321,7 +321,7 @@ export default class DomilyRenderSchema<
       return c(String(this.text ?? "domily-comment"));
     }
 
-    if (this.tag === DomilyFragment.name) {
+    if ([DomilyFragment.name, "fragment"].includes(this.tag as string)) {
       return f(this.children);
     }
 

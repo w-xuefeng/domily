@@ -1,5 +1,5 @@
 import { DomilyAppSchema, DomilyRouterView, EB, ISUtils, type DOMilyMountableRender } from '@domily/runtime-core';
-import { combinePaths, type IMatchedRoute, matchRoute } from './match';
+import { combinePaths, generateFullUrl, type IMatchedRoute, matchRoute } from './match';
 import { ROUTER_EVENTS } from './event';
 import DomilyPageSchema, { type IDomilyPageSchema } from './page';
 
@@ -40,6 +40,14 @@ export default abstract class DomilyRouterBase {
    */
   GLobalPageRouterHistoryStoreArray: IMatchedPage[] = [];
   /**
+   * the store for the global page path history
+   */
+  GLobalPagePathHistoryStoreArray: string[] = [];
+  /**
+   * the cursor for the global page path history
+   */
+  GLobalPagePathHistoryStoreArrayCursor = 0;
+  /**
    * the queue for the global page rendering
    */
   GLobalPageRouterRenderingQueue: (() => Promise<any>)[] = [];
@@ -58,7 +66,7 @@ export default abstract class DomilyRouterBase {
   /**
    * the current route on the page
    */
-  currentRoute?: IMatchedRoute;
+  currentRoute?: IMatchedRoute | null = null;
   /**
    * the current domily application DomilyAppSchema
    */
@@ -171,7 +179,7 @@ export default abstract class DomilyRouterBase {
     return await item.render(routerViewHTMLElement);
   }
 
-  async deepRender(matched?: IMatchedRoute) {
+  async deepRender(matched?: IMatchedRoute | null) {
     if (!this.root || !matched) {
       return;
     }
@@ -201,21 +209,24 @@ export default abstract class DomilyRouterBase {
     }
   }
 
-  match(pathname?: string) {
-    pathname = pathname || this.mode === 'history' ? globalThis.location.pathname : globalThis.location.hash.slice(1);
-
+  match(pathname?: string): IMatchedRoute {
+    pathname =
+      pathname || this.mode === 'history'
+        ? globalThis.location.href.replace(globalThis.location.origin, '')
+        : globalThis.location.hash.slice(1);
     const matched = matchRoute(Object.values(this.routesPathFlatMap), pathname);
     if (!matched) {
-      return this.routesPathMap['/*'];
+      const wildcard = this.routesPathMap['/*'];
+      return Object.assign({}, wildcard, generateFullUrl(pathname, {}, this.mode));
     }
-    return matched;
+    return Object.assign(matched, generateFullUrl(matched.path, matched, this.mode));
   }
 
-  matchPage() {
+  matchPage(pathname?: string, withoutHistory = false) {
     const renderPromise = () =>
       new Promise<void>(resolve => {
         const from = this.GLobalPageRouterHistoryStoreArray.at(-1);
-        const matched = this.match();
+        const matched = this.match(pathname);
         if (Array.isArray(this.beforeEach) && this.beforeEach.length) {
           for (const before of this.beforeEach) {
             if (ISUtils.isFunction(before)) {
@@ -241,47 +252,57 @@ export default abstract class DomilyRouterBase {
         }
         from?.comp.unmount();
         this.deepRender(this.currentRoute).finally(resolve);
+        if (matched && !withoutHistory) {
+          if (!matched.fullPath) {
+            return;
+          }
+          this.GLobalPagePathHistoryStoreArray.push(matched.fullPath);
+          this.GLobalPagePathHistoryStoreArrayCursor = this.GLobalPagePathHistoryStoreArray.length - 1;
+        }
       });
     this.GLobalPageRouterRenderingQueue.push(renderPromise);
     this.executeQueueRender();
   }
-
-  public resolve(options: IRouterOptions) {
+  public resolve(options: IRouterOptions): IMatchedRoute | null {
     const { name, path, query, params } = options;
     const data = {
       query,
       params,
     };
+    const resolveFullPath = (routes?: { path: string }) => {
+      const { fullPath, href } = routes ? generateFullUrl(routes.path, data, this.mode) : {};
+      return Object.assign(data, routes, {
+        fullPath,
+        href,
+      });
+    };
     if (name) {
       const routes = this.routesNameFlatMap[name];
-      return Object.assign(data, routes, {
-        fullPath: '// TODO',
-        href: '// TODO',
-      });
+      return Object.assign(data, routes, resolveFullPath(routes));
     }
     if (path) {
       const routes = this.routesPathFlatMap[path];
-      return Object.assign(data, routes, {
-        fullPath: '// TODO',
-        href: '// TODO',
-      });
+      return Object.assign(data, routes, resolveFullPath(routes ?? { path }));
     }
-    // TODO
-    console.log('🚀 ~ DomilyRouter ~ resolve ~ options:', options);
+    return null;
   }
-  public push(options: IRouterOptions) {
-    // TODO
-    console.log('🚀 ~ DomilyRouter ~ push ~ options:', options);
+  abstract back(): void;
+  abstract forward(): void;
+  abstract go(deep: number): void;
+  push(options: IRouterOptions) {
+    const { href } = this.resolve(options) || {};
+    if (!href) {
+      return;
+    }
+    history.pushState(options, '', href);
+    this.matchPage();
   }
-  public back() {
-    // TODO
-  }
-  public go(deep: number) {
-    // TODO
-    console.log('🚀 ~ DomilyRouter ~ go ~ deep:', deep);
-  }
-  public replace(options: IRouterOptions) {
-    // TODO
-    console.log('🚀 ~ DomilyRouter ~ replace ~ options:', options);
+  replace(options: IRouterOptions) {
+    const { href } = this.resolve(options) || {};
+    if (!href) {
+      return;
+    }
+    history.replaceState(options, '', href);
+    this.matchPage();
   }
 }

@@ -19,6 +19,14 @@ export type TDomilyAppSchema<
   app: DOMilyChild;
 };
 
+/**
+ * domily global properties
+ */
+const GLOBAL_PROPERTY_KEY = "$P" as const;
+if (!Reflect.get(globalThis, GLOBAL_PROPERTY_KEY)) {
+  Reflect.set(globalThis, GLOBAL_PROPERTY_KEY, {});
+}
+
 export default class DomilyAppSchema<
   GlobalProperties extends Record<string, any> = Record<string, any>
 > {
@@ -37,6 +45,19 @@ export default class DomilyAppSchema<
     this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
     this.app = () => domilyChildToDOMilyMountableRender(schema.app);
     DomilyAppInstances.set(this.namespace, this);
+
+    Reflect.set(
+      globalThis[GLOBAL_PROPERTY_KEY as keyof typeof globalThis],
+      this.namespace,
+      new Proxy(this.globalProperties, {
+        get: (target, p) => {
+          return Reflect.get(target, p);
+        },
+        set: (target, p, newValue, receiver) => {
+          return Reflect.set(target, p, newValue, receiver);
+        },
+      })
+    );
   }
 
   static create<

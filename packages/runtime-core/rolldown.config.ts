@@ -16,7 +16,7 @@ export default defineConfig([
         dir: "lib",
         format: "esm",
         entryFileNames: "[name].esm.js",
-        // plugins: [terser()],
+        plugins: [terser()],
       },
       {
         dir: "lib",

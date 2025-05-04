@@ -8,7 +8,6 @@ export default class DomilyHashRouter extends DomilyRouterBase {
     super(app, options);
     Reflect.set(this.app.globalProperties, '$router', this);
   }
-
   initRouter() {
     if (!globalThis.location.hash) {
       globalThis.location.hash = '#/';
@@ -16,5 +15,14 @@ export default class DomilyHashRouter extends DomilyRouterBase {
     globalThis.addEventListener('hashchange', () => {
       this.matchPage();
     });
+  }
+  back() {
+    history.back();
+  }
+  forward() {
+    history.forward();
+  }
+  go(deep: number) {
+    history.go(deep);
   }
 }

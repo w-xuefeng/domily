@@ -124,12 +124,3 @@ export function page<PageMeta = {}>(schema: IDomilyPageSchema<PageMeta>) {
     },
   };
 }
-
-// page<PageMeta = {}>(
-//   schema: IDomilyPageSchema<PageMeta>
-// ): {
-//   page: DomilyPageSchema<PageMeta>;
-//   mount(
-//     parent?: HTMLElement | Document | ShadowRoot | string
-//   ): Promise<DOMilyMountableRender<any, any> | null>;
-// };

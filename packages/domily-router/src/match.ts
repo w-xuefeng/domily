@@ -9,6 +9,8 @@ export interface IMatchedRoute extends IRouterConfig {
   params?: Record<string, string>;
   query?: Record<string, string>;
   hash?: string;
+  fullPath?: string;
+  href?: string;
 }
 
 // 辅助函数：路径优先级评分（静态>动态>通配符）
@@ -60,6 +62,38 @@ export const getAliasPaths = (route: IRouterConfig, parentPath: string): string[
   );
 };
 
+export function generateFullUrl(
+  pathTemplate: string,
+  data?: { params?: Record<string, any>; query?: Record<string, any>; hash?: string },
+  mode: 'hash' | 'history' = 'hash',
+) {
+  const [pathname = '', search, hash] = pathTemplate.split(/(?=[?#])/);
+  const toPath = PTR.compile(pathname);
+  const pathWithParams = toPath(data?.params || {});
+  const query = Object.fromEntries(new URLSearchParams(search).entries());
+  const queryString =
+    data?.query || search
+      ? new URLSearchParams({
+          ...query,
+          ...data?.query,
+        }).toString()
+      : '';
+  const withHash = `${hash ? `#${hash}` : ''}`;
+  const fullPath = queryString ? `${pathWithParams}?${queryString}${withHash}` : `${pathWithParams}${withHash}`;
+  const href =
+    mode === 'hash'
+      ? (() => {
+          const u = new URL(location.href);
+          u.hash = fullPath;
+          return u.toString();
+        })()
+      : combinePaths(location.origin, fullPath);
+  return {
+    fullPath,
+    href,
+  };
+}
+
 export function matchRoute(
   routes: IRouterConfig[],
   currentPath: string = globalThis.location.pathname,
@@ -97,12 +131,12 @@ export function matchRoute(
             const childMatch = __matchRoute(route.children, path, params);
             if (childMatch) return childMatch;
           }
-
-          return Object.assign(route, {
+          const data = {
             params,
             query,
             hash: hash?.replace('#', ''),
-          });
+          };
+          return Object.assign(route, data);
         }
       }
     }

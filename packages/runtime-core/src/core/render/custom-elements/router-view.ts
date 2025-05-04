@@ -3,18 +3,18 @@ import type { DOMilyChildren } from "../type/types";
 
 export default class DomilyRouterView extends HTMLElement {
   static name = "router-view";
-  child: DOMilyChildren;
+  initialChildren: DOMilyChildren;
   constructor(children: DOMilyChildren = []) {
     super();
-    this.child = children;
+    this.initialChildren = children;
   }
   connectedCallback() {
-    if (!this.child?.length) {
+    if (!this.initialChildren?.length) {
       this.appendChild(document.createElement("slot"));
       return;
     }
     const documentFragment = document.createDocumentFragment();
-    for (const item of this.child) {
+    for (const item of this.initialChildren) {
       const dom = domilyChildToDOM(item);
       if (dom) {
         documentFragment.append(dom);
