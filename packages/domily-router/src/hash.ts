@@ -7,6 +7,11 @@ export default class DomilyHashRouter extends DomilyRouterBase {
   constructor(app: DomilyAppSchema, options?: ICreateRouterOptions) {
     super(app, options);
     Reflect.set(this.app.globalProperties, '$router', this);
+    Reflect.defineProperty(this.app.globalProperties, '$route', {
+      get: () => {
+        return this.currentRoute;
+      },
+    });
   }
   initRouter() {
     if (!globalThis.location.hash) {

@@ -1,8 +1,7 @@
 import { type IDomilyPageSchema } from '@domily/router';
 
-export const routes: (namespace: string) => IDomilyPageSchema[] = (namespace: string) => [
+export const routes: IDomilyPageSchema[] = [
   {
-    namespace,
     name: 'index',
     path: '/',
     component: import('../view/layout'),
@@ -48,7 +47,6 @@ export const routes: (namespace: string) => IDomilyPageSchema[] = (namespace: st
     path: '/login',
     meta: {
       title: '登录',
-      authorize: [],
     },
     component: import('../view/login'),
   },

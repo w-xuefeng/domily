@@ -7,7 +7,7 @@ const { EventBus, EVENTS } = EB;
 
 export interface ICreateRouterOptions {
   base?: string;
-  routes?: IDomilyPageSchema<any>[];
+  routes?: IDomilyPageSchema<any, any>[];
 }
 
 export interface IRouterOptions {
@@ -140,6 +140,7 @@ export default abstract class DomilyRouterBase {
     this.app = app;
     this.routes =
       routes?.map(e => {
+        e.namespace = e.namespace || app.namespace;
         e.path = combinePaths(base, e.path);
         return DomilyPageSchema.create(e);
       }) || [];

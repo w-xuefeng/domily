@@ -12,7 +12,7 @@ import type { IMatchedPage } from './base';
 const { isFunction, isThenable } = ISUtils;
 const { EventBus } = EB;
 
-export interface IDomilyPageSchema<PageMeta = {}> {
+export interface IDomilyPageSchema<PageMeta = {}, Props extends Record<string, any> = {}> {
   name?: string;
   namespace?: string | symbol;
   path: string;
@@ -21,9 +21,10 @@ export interface IDomilyPageSchema<PageMeta = {}> {
   redirect?: { name?: string; path?: string };
   meta?: PageMeta;
   children?: IDomilyPageSchema[];
+  props?: Props;
 }
 
-export default class DomilyPageSchema<PageMeta = {}> {
+export default class DomilyPageSchema<PageMeta = {}, Props extends Record<string, any> = {}> {
   name?: string;
   namespace: string | symbol;
   path: string;
@@ -32,29 +33,40 @@ export default class DomilyPageSchema<PageMeta = {}> {
   redirect?: { name?: string; path?: string };
   meta?: PageMeta;
   children?: DomilyPageSchema<unknown>[];
+  props?: Props;
   private functionComponent: DOMilyComponent | null = null;
   private asyncComponentLoading = false;
 
-  constructor(schema: IDomilyPageSchema<PageMeta>) {
+  constructor(schema: IDomilyPageSchema<PageMeta, Props>) {
     this.name = schema.name;
     this.namespace = schema.namespace || Symbol('DomilyAppNamespace');
     this.path = schema.path;
     this.alias = schema.alias;
     this.component = schema.component;
     this.redirect = schema.redirect;
-    this.meta = schema.meta as PageMeta;
+    this.meta = schema.meta;
+    this.props = schema.props;
     this.children = schema.children?.map(e => {
       e.namespace = e.namespace ?? this.namespace;
       return new DomilyPageSchema<unknown>(e);
     });
   }
 
-  static create<PageMeta = {}>(schema: IDomilyPageSchema<PageMeta>) {
+  static create<PageMeta = {}, Props extends Record<string, any> = {}>(schema: IDomilyPageSchema<PageMeta, Props>) {
     return new DomilyPageSchema(schema);
   }
 
   #toView(component: DOMilyComponent, el: HTMLElement | Document | ShadowRoot | string) {
-    const comp = parseComponent(component, true);
+    const comp = parseComponent(
+      Object.assign(
+        {
+          namespace: this.namespace,
+        },
+        this.props,
+      ),
+      component,
+      true,
+    );
     if (!comp) {
       return null;
     }
@@ -114,7 +126,9 @@ export default class DomilyPageSchema<PageMeta = {}> {
   }
 }
 
-export function page<PageMeta = {}>(schema: IDomilyPageSchema<PageMeta>) {
+export function page<PageMeta = {}, Props extends Record<string, any> = {}>(
+  schema: IDomilyPageSchema<PageMeta, Props>,
+) {
   const pageInstance = DomilyPageSchema.create(schema);
 
   return {

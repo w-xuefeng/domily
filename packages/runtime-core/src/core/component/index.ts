@@ -7,7 +7,7 @@ import DomilyRenderSchema from "../render/schema";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 
 export interface DOMilyComponent {
-  (props?: any[]):
+  (props?: any):
     | DomilyRenderSchema
     | IDomilyRenderOptions<any, any>
     | DOMilyMountableRender<any, any>
@@ -18,22 +18,35 @@ export type AsyncDOMilyComponentModule = Promise<{ default: DOMilyComponent }>;
 
 export const DomilyComponentWeakMap = new WeakMap<
   Function,
-  DOMilyMountableRender<any, any>
+  Map<string, DOMilyMountableRender<any, any>>
 >();
 
 export function parseComponent(
+  props: Record<string, any>,
   functionComponent: DOMilyComponent,
   nocache = false
 ) {
-  const cache = DomilyComponentWeakMap.get(functionComponent);
-  if (cache && !nocache) {
-    return cache;
+  const cacheMap = DomilyComponentWeakMap.get(functionComponent);
+  const propsKey = JSON.stringify(props);
+  if (cacheMap && !nocache) {
+    const cache = cacheMap.get(propsKey);
+    if (cache) {
+      return cache;
+    }
   }
-  const comp = functionComponent();
+  const comp = functionComponent(props);
   const mountable = domilyChildToDOMilyMountableRender(comp);
   if (!mountable) {
     return null;
   }
-  DomilyComponentWeakMap.set(functionComponent, mountable);
+  if (!cacheMap) {
+    DomilyComponentWeakMap.set(
+      functionComponent,
+      new Map<string, DOMilyMountableRender<any, any>>([[propsKey, mountable]])
+    );
+  } else {
+    cacheMap.set(propsKey, mountable);
+    DomilyComponentWeakMap.set(functionComponent, cacheMap);
+  }
   return mountable;
 }

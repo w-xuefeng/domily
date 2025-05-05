@@ -6,6 +6,11 @@ export default class DomilyHistoryRouter extends DomilyRouterBase {
   constructor(app: DomilyAppSchema, options?: ICreateRouterOptions) {
     super(app, options);
     Reflect.set(this.app.globalProperties, '$router', this);
+    Reflect.defineProperty(this.app.globalProperties, '$route', {
+      get: () => {
+        return this.currentRoute;
+      },
+    });
   }
   initRouter() {}
   back() {

@@ -1,7 +1,7 @@
 import * as PTR from 'path-to-regexp';
 import DomilyPageSchema from './page';
 
-export interface IRouterConfig extends DomilyPageSchema<any> {
+export interface IRouterConfig extends DomilyPageSchema<any, any> {
   parent?: DomilyPageSchema<any> | null;
 }
 

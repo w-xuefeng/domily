@@ -1,5 +1,6 @@
-import { Domily } from "@domily/runtime-core";
+import { Domily, type WithBaseProps } from '@domily/runtime-core';
 
-export default function App() {
-  return Domily["router-view"]();
+export default function App({ namespace }: WithBaseProps) {
+  console.log('🚀 ~ App ~ namespace:', namespace);
+  return Domily['router-view']();
 }
