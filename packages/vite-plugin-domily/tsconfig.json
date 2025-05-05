@@ -17,12 +17,17 @@
     ],
     "preserveValueImports": false,
     "importsNotUsedAsValues": "remove",
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "declarationDir": "./lib/types",
+    "emitDeclarationOnly": true,
   },
   "include": [
     "**/*.ts"
   ],
   "exclude": [
     "node_modules",
+    "scripts",
+    "lib"
   ]
 }

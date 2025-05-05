@@ -8,7 +8,8 @@
   "scripts": {
     "build:rc": "bun --filter @domily/runtime-core build",
     "build:dr": "bun --filter @domily/router build",
-    "build": "bun build:rc && bun build:dr",
+    "build:vp": "bun --filter vite-plugin-domily build",
+    "build": "bun build:rc && bun build:dr && bun build:vp",
     "test": "bun run build && bun --filter domily-test dev",
     "build:test": "bun run build && bun --filter domily-test build"
   },

@@ -1,10 +1,16 @@
 {
   "name": "vite-plugin-domily",
   "version": "1.0.0",
-  "main": "index.js",
-  "types": "types/domily.d.ts",
+  "main": "./lib/index.cjs.js",
+  "module": "./lib/index.esm.js",
+  "types": "./lib/types/index.d.ts",
   "exports": {
-    "types": "./types/domily.d.ts"
+    "require": "./lib/index.cjs.js",
+    "import": "./lib/index.esm.js",
+    "types": "./lib/types/index.d.ts"
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts && bun run scripts/types.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +27,7 @@
     "@domily/router": "workspace:*"
   },
   "dependencies": {
-    "@swc/core": "^1.11.22"
+    "@swc/core": "^1.11.24",
+    "@swc/wasm": "^1.11.24"
   }
 }
