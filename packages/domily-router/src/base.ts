@@ -232,7 +232,6 @@ export default abstract class DomilyRouterBase {
         ? globalThis.location.href.replace(globalThis.location.origin, '')
         : globalThis.location.hash.slice(1));
     const matched = matchRoute(Object.values(this.routesPathFlatMap), pathname);
-    console.log('🚀 ~ DomilyRouterBase ~ match ~ matched:', matched);
     if (!matched) {
       const wildcard = this.routesPathMap['/*'];
       return wildcard ? Object.assign(wildcard, generateFullUrl(pathname, {}, this.mode)) : null;
