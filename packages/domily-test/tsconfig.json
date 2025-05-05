@@ -9,11 +9,12 @@
     "types": [
       "node",
       "vite",
-      "./types/domily.d.ts"
+      "vite-plugin-domily"
     ],
     "lib": [
       "ESNext",
       "DOM",
+      "DOM.Iterable"
     ],
     "preserveValueImports": false,
     "importsNotUsedAsValues": "remove",

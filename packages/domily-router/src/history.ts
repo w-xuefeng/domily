@@ -34,16 +34,7 @@ export default class DomilyHistoryRouter extends DomilyRouterBase {
       afterRendered: (rendered, matched) => {
         if (matched && rendered) {
           this.GLobalPagePathHistoryStoreArrayCursor = index;
-          history.replaceState(
-            {
-              name: matched.name,
-              path: matched.path,
-              query: matched.query,
-              params: matched.params,
-            },
-            '',
-            next,
-          );
+          history.replaceState(this.obtainHistoryState(matched), '', next);
         }
       },
     });

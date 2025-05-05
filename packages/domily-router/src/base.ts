@@ -23,10 +23,13 @@ export interface IMatchedPage extends IMatchedRoute {
 
 export interface IRouterBeforeEach {
   (
-    from: IMatchedPage | undefined,
-    to: IMatchedRoute | undefined,
+    from: IMatchedPage | undefined | null,
+    to: IMatchedRoute | undefined | null,
     next: (to?: IRouterOptions | IMatchedPage | IMatchedRoute | string) => void,
   ): void;
+}
+export interface IRouterAfterEach {
+  (route: IMatchedRoute | undefined | null): void;
 }
 
 export default abstract class DomilyRouterBase {
@@ -127,6 +130,10 @@ export default abstract class DomilyRouterBase {
    * before matched the router callback
    */
   beforeEach: IRouterBeforeEach[] = [];
+  /**
+   * after matched the router rendered callback
+   */
+  afterEach: IRouterAfterEach[] = [];
 
   constructor(app: DomilyAppSchema, options?: ICreateRouterOptions) {
     const { routes, base = '' } = options || {};
@@ -157,6 +164,15 @@ export default abstract class DomilyRouterBase {
     });
 
     this.initialed = true;
+  }
+
+  obtainHistoryState(matched: IMatchedRoute | undefined | null) {
+    return {
+      name: matched?.name,
+      path: matched?.path,
+      query: matched?.query,
+      params: matched?.params,
+    };
   }
 
   async executeQueueRender() {
@@ -209,16 +225,17 @@ export default abstract class DomilyRouterBase {
     return true;
   }
 
-  match(pathname?: string): IMatchedRoute {
+  match(pathname?: string): IMatchedRoute | null {
     pathname =
       pathname ||
       (this.mode === 'history'
         ? globalThis.location.href.replace(globalThis.location.origin, '')
         : globalThis.location.hash.slice(1));
     const matched = matchRoute(Object.values(this.routesPathFlatMap), pathname);
+    console.log('🚀 ~ DomilyRouterBase ~ match ~ matched:', matched);
     if (!matched) {
       const wildcard = this.routesPathMap['/*'];
-      return Object.assign({}, wildcard, generateFullUrl(pathname, {}, this.mode));
+      return wildcard ? Object.assign(wildcard, generateFullUrl(pathname, {}, this.mode)) : null;
     }
     return Object.assign(matched, generateFullUrl(matched.path, matched, this.mode));
   }
@@ -267,6 +284,18 @@ export default abstract class DomilyRouterBase {
             if (ISUtils.isFunction(callbacks?.afterRendered)) {
               callbacks.afterRendered(rendered, this.currentRoute);
             }
+            if (rendered && this.currentRoute && this.currentRoute.href !== location.href) {
+              history.replaceState(this.obtainHistoryState(this.currentRoute), '', this.currentRoute.href);
+            }
+            if (Array.isArray(this.afterEach) && this.afterEach.length) {
+              for (const after of this.afterEach) {
+                if (ISUtils.isFunction(after)) {
+                  after(this.currentRoute);
+                }
+              }
+            } else {
+              this.currentRoute = matched;
+            }
           })
           .finally(resolve);
         if (this.currentRoute && !withoutHistory) {
@@ -280,7 +309,7 @@ export default abstract class DomilyRouterBase {
     this.GLobalPageRouterRenderingQueue.push(renderPromise);
     this.executeQueueRender();
   }
-  public resolve(options: IRouterOptions): IMatchedRoute | null {
+  resolve(options: IRouterOptions): IMatchedRoute | null {
     const { name, path, query, params } = options;
     const data = {
       query,
@@ -288,18 +317,24 @@ export default abstract class DomilyRouterBase {
     };
     const resolveFullPath = (routes?: { path: string }) => {
       const { fullPath, href } = routes ? generateFullUrl(routes.path, data, this.mode) : {};
-      return Object.assign(data, routes, {
+      return {
         fullPath,
         href,
-      });
+      };
     };
     if (name) {
       const routes = this.routesNameFlatMap[name];
-      return Object.assign(data, routes, resolveFullPath(routes));
+      if (!routes) {
+        return null;
+      }
+      return Object.assign(routes, data, resolveFullPath(routes));
     }
     if (path) {
       const routes = this.routesPathFlatMap[path];
-      return Object.assign(data, routes, resolveFullPath(routes ?? { path }));
+      if (routes) {
+        return Object.assign(routes, data, resolveFullPath(routes));
+      }
+      return this.match(path);
     }
     return null;
   }

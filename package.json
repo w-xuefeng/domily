@@ -9,8 +9,8 @@
     "build:rc": "bun --filter @domily/runtime-core build",
     "build:dr": "bun --filter @domily/router build",
     "build": "bun build:rc && bun build:dr",
-    "test:vp": "bun --filter vite-plugin-domily test",
-    "build:vp-test": "bun --filter vite-plugin-domily test:build"
+    "test": "bun run build && bun --filter domily-test dev",
+    "build:test": "bun run build && bun --filter domily-test build"
   },
   "devDependencies": {
     "@types/bun": "latest"
