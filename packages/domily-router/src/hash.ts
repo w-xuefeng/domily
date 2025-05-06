@@ -21,13 +21,4 @@ export default class DomilyHashRouter extends DomilyRouterBase {
       this.matchPage();
     });
   }
-  back() {
-    history.back();
-  }
-  forward() {
-    history.forward();
-  }
-  go(deep: number) {
-    history.go(deep);
-  }
 }

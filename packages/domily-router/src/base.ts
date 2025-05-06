@@ -43,14 +43,6 @@ export default abstract class DomilyRouterBase {
    */
   GLobalPageRouterHistoryStoreArray: IMatchedPage[] = [];
   /**
-   * the store for the global page path history
-   */
-  GLobalPagePathHistoryStoreArray: string[] = [];
-  /**
-   * the cursor for the global page path history
-   */
-  GLobalPagePathHistoryStoreArrayCursor = 0;
-  /**
    * the queue for the global page rendering
    */
   GLobalPageRouterRenderingQueue: (() => Promise<any>)[] = [];
@@ -163,16 +155,44 @@ export default abstract class DomilyRouterBase {
       this.root = e;
       this.matchPage();
     });
-
+    globalThis.addEventListener('popstate', (e: PopStateEvent) => {
+      let fullPath = this.mode === 'history' ? location.href.replace(location.origin, '') : location.hash.slice(1);
+      let pageXOffset = 0;
+      let pageYOffset = 0;
+      if (e.state && typeof e.state === 'object') {
+        const { name, path, query, params, x, y } = e.state;
+        const resolved = this.resolve({
+          name,
+          path,
+          query,
+          params,
+        });
+        if (resolved?.fullPath) {
+          fullPath = resolved.fullPath;
+          pageXOffset = x;
+          pageYOffset = y;
+        }
+      }
+      this.matchPage(fullPath, {
+        afterRendered(rendered) {
+          if (rendered) {
+            globalThis.pageXOffset = pageXOffset;
+            globalThis.pageYOffset = pageYOffset;
+          }
+        },
+      });
+    });
     this.initialed = true;
   }
 
-  obtainHistoryState(matched: IMatchedRoute | undefined | null) {
+  obtainHistoryState(matched: IRouterOptions | IMatchedRoute | undefined | null) {
     return {
       name: matched?.name,
       path: matched?.path,
       query: matched?.query,
       params: matched?.params,
+      x: globalThis.pageXOffset,
+      y: globalThis.pageYOffset,
     };
   }
 
@@ -242,7 +262,6 @@ export default abstract class DomilyRouterBase {
 
   matchPage(
     pathname?: string,
-    withoutHistory = false,
     callbacks?: {
       afterMatched?: (matched?: IMatchedRoute | null) => void;
       afterRendered?: (rendered: boolean, matched?: IMatchedRoute | null) => void;
@@ -298,13 +317,6 @@ export default abstract class DomilyRouterBase {
             }
           })
           .finally(resolve);
-        if (this.currentRoute && !withoutHistory) {
-          if (!this.currentRoute.fullPath) {
-            return;
-          }
-          this.GLobalPagePathHistoryStoreArray.push(this.currentRoute.fullPath);
-          this.GLobalPagePathHistoryStoreArrayCursor = this.GLobalPagePathHistoryStoreArray.length - 1;
-        }
       });
     this.GLobalPageRouterRenderingQueue.push(renderPromise);
     this.executeQueueRender();
@@ -338,15 +350,21 @@ export default abstract class DomilyRouterBase {
     }
     return null;
   }
-  abstract back(): void;
-  abstract forward(): void;
-  abstract go(deep: number): void;
+  back() {
+    history.back();
+  }
+  forward() {
+    history.forward();
+  }
+  go(deep: number) {
+    history.go(deep);
+  }
   push(options: IRouterOptions) {
     const { href } = this.resolve(options) || {};
     if (!href) {
       return;
     }
-    history.pushState(options, '', href);
+    history.pushState(this.obtainHistoryState(options), '', href);
     this.matchPage();
   }
   replace(options: IRouterOptions) {
@@ -354,7 +372,7 @@ export default abstract class DomilyRouterBase {
     if (!href) {
       return;
     }
-    history.replaceState(options, '', href);
+    history.replaceState(this.obtainHistoryState(options), '', href);
     this.matchPage();
   }
 }

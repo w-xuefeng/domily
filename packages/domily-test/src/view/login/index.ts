@@ -1,8 +1,10 @@
+import { useRouter } from '@domily/router';
 import { Domily } from '@domily/runtime-core';
 
 const { div, h1, button } = Domily;
 
-export default function Login() {
+export default function Login({ namespace }) {
+  const router = useRouter(namespace);
   return div({
     className: 'login',
     children: [
@@ -19,8 +21,7 @@ export default function Login() {
             if (r) {
               console.log('🚀 ~ Login ~ r:', r);
               localStorage.setItem('token', '123');
-              // @ts-ignore
-              $P.domily.$router.push({ path: r });
+              router.push({ path: r });
             }
           },
         },
