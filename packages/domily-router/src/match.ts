@@ -13,6 +13,15 @@ export interface IMatchedRoute extends IRouterConfig {
   href?: string;
 }
 
+export function handleStringPathname(pathname: string) {
+  const [path = '', search, hash] = pathname.split(/(?=[?#])/);
+  return {
+    path,
+    query: Object.fromEntries(new URLSearchParams(search).entries()),
+    hash: hash?.slice(1),
+  };
+}
+
 // 辅助函数：路径优先级评分（静态>动态>通配符）
 export const getPathPriorityScore = (path: string): number => {
   if (path === '*') return 0;
@@ -78,7 +87,7 @@ export function generateFullUrl(
           ...data?.query,
         }).toString()
       : '';
-  const withHash = `${hash ? `#${hash}` : ''}`;
+  const withHash = `${data?.hash || hash ? `#${data?.hash || hash}` : ''}`;
   const fullPath = queryString ? `${pathWithParams}?${queryString}${withHash}` : `${pathWithParams}${withHash}`;
   const href =
     mode === 'hash'

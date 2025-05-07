@@ -1,5 +1,5 @@
 import { DomilyAppSchema, DomilyRouterView, EB, ISUtils, type DOMilyMountableRender } from '@domily/runtime-core';
-import { combinePaths, generateFullUrl, type IMatchedRoute, matchRoute } from './match';
+import { combinePaths, generateFullUrl, handleStringPathname, type IMatchedRoute, matchRoute } from './match';
 import { ROUTER_EVENTS } from './event';
 import DomilyPageSchema, { type IDomilyPageSchema } from './page';
 
@@ -15,6 +15,7 @@ export interface IRouterOptions {
   path?: string;
   query?: Record<string, string>;
   params?: Record<string, string>;
+  hash?: string;
 }
 
 export interface IMatchedPage extends IMatchedRoute {
@@ -322,10 +323,11 @@ export default abstract class DomilyRouterBase {
     this.executeQueueRender();
   }
   resolve(options: IRouterOptions): IMatchedRoute | null {
-    const { name, path, query, params } = options;
+    const { name, path, query, params, hash } = options;
     const data = {
       query,
       params,
+      hash,
     };
     const resolveFullPath = (routes?: { path: string }) => {
       const { fullPath, href } = routes ? generateFullUrl(routes.path, data, this.mode) : {};
@@ -359,7 +361,10 @@ export default abstract class DomilyRouterBase {
   go(deep: number) {
     history.go(deep);
   }
-  push(options: IRouterOptions) {
+  push(options: IRouterOptions | string) {
+    if (typeof options === 'string') {
+      options = handleStringPathname(options);
+    }
     const { href } = this.resolve(options) || {};
     if (!href) {
       return;
@@ -367,7 +372,10 @@ export default abstract class DomilyRouterBase {
     history.pushState(this.obtainHistoryState(options), '', href);
     this.matchPage();
   }
-  replace(options: IRouterOptions) {
+  replace(options: IRouterOptions | string) {
+    if (typeof options === 'string') {
+      options = handleStringPathname(options);
+    }
     const { href } = this.resolve(options) || {};
     if (!href) {
       return;
