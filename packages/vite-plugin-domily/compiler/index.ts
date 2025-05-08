@@ -1,6 +1,47 @@
-import { transform } from "@swc/core";
+import {
+  parseSync,
+  printSync,
+  transform,
+  type JscConfig,
+  type ModuleItem,
+} from "@swc/core";
 import type { VitePluginDomilyOptions } from "./utils";
 type Mode = "dev" | "build" | "unknown";
+
+function filterCode(
+  code: string,
+  filter: (node: ModuleItem) => boolean,
+  options: {
+    ts?: boolean;
+    mode?: Mode;
+  }
+) {
+  const ast = parseSync(code, {
+    syntax: options.ts ? "typescript" : "ecmascript",
+  });
+  const filteredAst = {
+    ...ast,
+    body: ast.body.filter(filter),
+  };
+  return printSync(filteredAst, { minify: options.mode !== "dev" }).code;
+}
+
+function JSC(ts: boolean) {
+  const jsc: JscConfig = {
+    parser: {
+      syntax: ts ? "typescript" : "ecmascript",
+      tsx: true,
+      decorators: true,
+    },
+    target: "es2022",
+    minify: {
+      format: {
+        indentLevel: 2,
+      },
+    },
+  };
+  return jsc;
+}
 
 function parse(code: string) {
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)\n```/g;
@@ -51,19 +92,21 @@ function parse(code: string) {
   return result;
 }
 
-function handleScript(
-  code: {
-    script: string;
-    json: string;
-    style: string;
-    ts: boolean;
-    cssPreprocessor: string;
-  },
-  mode: Mode
-) {
-  code.json = code.json.replaceAll(/"@(?<event>\w+)"/g, (_, match) => {
-    return match;
-  });
+function handleScript(code: {
+  script: string;
+  json: string;
+  style: string;
+  ts: boolean;
+  cssPreprocessor: string;
+}) {
+  code.json = code.json
+    .replaceAll(/"@(?<event>\w+\(?[\w,?]*\)?)"/g, (_, match) => {
+      return match;
+    })
+    .replaceAll(/":(?<bind>\w+\(?[\w,?]*\)?)"/g, (_, match) => {
+      return match;
+    });
+
   return code;
 }
 
@@ -117,61 +160,62 @@ function handleTemplateStyle(json: string, style: string) {
   return template;
 }
 
-function generateCodeText({
+async function generateCodeText({
   name,
   script,
   template,
   options,
+  ts,
+  mode,
 }: {
   name: string;
   script: string;
   template: string;
   options: VitePluginDomilyOptions;
+  ts: boolean;
+  mode: Mode;
 }) {
   const {
     customElement: { enable, prefix },
   } = options;
 
-  const result = enable
+  const returnTemplate = enable
     ? `{ name: "${prefix}${name}", customElementComponent: ${template}}`
     : template;
-
-  const codeText = `export default () => {
-    ${script}
-    return ${result}
-  }`;
-
-  return codeText;
+  const imports = filterCode(script, (n) => n.type === "ImportDeclaration", {
+    ts,
+    mode,
+  });
+  const others = filterCode(script, (n) => n.type !== "ImportDeclaration", {
+    ts,
+    mode,
+  });
+  return `${imports}export default function(){${others}return ${returnTemplate}}`;
 }
 
 export async function transformDOMSingleFileComponentCode(
   name: string,
   code: string,
-  mode: "dev" | "build" | "unknown",
+  mode: Mode,
   options: VitePluginDomilyOptions
 ) {
   const { script, style, json, ts } = await handleStyle(
-    handleScript(parse(code), mode),
+    handleScript(parse(code)),
     mode
   );
   const template = handleTemplateStyle(json, style);
 
-  const codeText = generateCodeText({
+  const codeText = await generateCodeText({
     name,
     script,
     template,
     options,
+    ts,
+    mode,
   });
 
   const result = await transform(codeText, {
-    jsc: {
-      parser: {
-        syntax: ts ? "typescript" : "ecmascript",
-        tsx: true,
-        decorators: true,
-      },
-      target: "es2022",
-    },
+    jsc: JSC(ts),
     minify: mode !== "dev",
     sourceMaps: mode === "dev",
   });

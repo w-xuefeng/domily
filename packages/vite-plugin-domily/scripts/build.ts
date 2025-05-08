@@ -28,7 +28,7 @@ const build = async () => {
       Bun.build({
         entrypoints: [path.resolve(import.meta.dir, "..", "index.ts")],
         outdir,
-        minify: true,
+        minify: false,
         ...e,
       })
     )

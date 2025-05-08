@@ -1,17 +1,17 @@
 import { useRouter } from '@domily/router';
-import { Domily } from '@domily/runtime-core';
-
-const { div, h1, button } = Domily;
 
 export default function Login({ namespace }) {
   const router = useRouter(namespace);
-  return div({
+  return {
+    tag: 'div',
     className: 'login',
     children: [
-      h1({
+      {
+        tag: 'h1',
         text: 'Login Page',
-      }),
-      button({
+      },
+      {
+        tag: 'button',
         text: 'Login',
         on: {
           click: () => {
@@ -25,7 +25,7 @@ export default function Login({ namespace }) {
             }
           },
         },
-      }),
+      },
     ],
-  });
+  };
 }

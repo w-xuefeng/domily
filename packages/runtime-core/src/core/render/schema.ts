@@ -9,7 +9,17 @@ import type {
   IDomilyRenderOptions,
   TDomilyRenderProperties,
 } from "./type/types";
-import { c, f, h, mountable, rv, txt } from "../../utils/dom";
+import {
+  c,
+  f,
+  h,
+  handleCSS,
+  handleHiddenStyle,
+  internalCreateElement,
+  mountable,
+  rv,
+  txt,
+} from "../../utils/dom";
 import { merge } from "../../utils/obj";
 import { domilyChildToDOM } from "./shared/parse";
 import DomilyFragment from "./custom-elements/fragment";
@@ -252,45 +262,6 @@ export default class DomilyRenderSchema<
     return this.handleCustomElement(dom);
   }
 
-  handleCSS(): HTMLStyleElement | null {
-    if (!this.css) {
-      return null;
-    }
-
-    if (typeof this.css === "string") {
-      return h("style", null, document.createTextNode(this.css));
-    }
-
-    const selectors = Object.keys(this.css);
-    if (!selectors.length) {
-      return null;
-    }
-
-    function objectToCSS(properties: Record<string, any>) {
-      let cssString = "";
-      for (const [prop, value] of Object.entries(properties)) {
-        if (typeof value === "string") {
-          const cssProperty = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
-          cssString += `${cssProperty}: ${value};`;
-        }
-        if (typeof value === "object") {
-          cssString += `${prop} {${objectToCSS(value)}}`;
-        }
-      }
-      return cssString.trim();
-    }
-
-    function jsonToCSS(cssRecord: DOMilyCascadingStyleSheets): string {
-      let cssString = "";
-      for (const [selector, properties] of Object.entries(cssRecord)) {
-        cssString += `${selector} {${objectToCSS(properties)}}`;
-      }
-      return cssString.trim();
-    }
-
-    return h("style", null, document.createTextNode(jsonToCSS(this.css)));
-  }
-
   render(): HTMLElement | Node | null {
     /**
      * handle dom-if
@@ -313,24 +284,22 @@ export default class DomilyRenderSchema<
         ? !this.domShow
         : false;
 
+    /**
+     * Text Node
+     */
     if (this.tag === "text") {
       return hidden ? txt("") : txt(String(this.text ?? ""));
     }
 
+    /**
+     * Comment Node
+     */
     if (this.tag === "comment") {
       return c(String(this.text ?? "domily-comment"));
     }
 
-    if ([DomilyFragment.name, "fragment"].includes(this.tag as string)) {
-      return f(this.children);
-    }
-
-    if (this.tag === DomilyRouterView.name) {
-      return rv(this.children);
-    }
-
-    const css = this.handleCSS();
-
+    const css = handleCSS(this.css);
+    const style = handleHiddenStyle(this.style, hidden);
     const children = (this.children
       ?.map((child) => domilyChildToDOM(child))
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
@@ -338,28 +307,31 @@ export default class DomilyRenderSchema<
     if (css) {
       children.unshift(css);
     }
+
+    const props = {
+      ...this.props,
+      ...(this.id ? { id: this.id } : {}),
+      ...(this.className ? { className: this.className } : {}),
+      ...(this.html
+        ? { innerHTML: this.html }
+        : this.text
+        ? { innerText: this.text }
+        : {}),
+      attrs: this.attrs,
+      style,
+      on: this.on,
+    } as unknown as TDomilyRenderProperties<CustomElementMap, K>;
+
+    if ([DomilyFragment.name, "fragment"].includes(this.tag as string)) {
+      return internalCreateElement(() => f(children), props);
+    }
+
+    if (this.tag === DomilyRouterView.name) {
+      return internalCreateElement(() => rv(children), props);
+    }
+
     return this.domAOPTask(
-      h<CustomElementMap, K>(
-        this.tag,
-        {
-          ...this.props,
-          ...(this.id ? { id: this.id } : {}),
-          ...(this.className ? { className: this.className } : {}),
-          ...(this.html
-            ? { innerHTML: this.html }
-            : this.text
-            ? { innerText: this.text }
-            : {}),
-          attrs: this.attrs,
-          style: hidden
-            ? typeof this.style === "string"
-              ? `${this.style};display:none!important;`
-              : { ...this.style, display: "none!important" }
-            : this.style,
-          on: this.on,
-        } as unknown as TDomilyRenderProperties<CustomElementMap, K>,
-        children
-      ) as HTMLElement
+      h<CustomElementMap, K>(this.tag, props, children) as HTMLElement
     );
   }
 }

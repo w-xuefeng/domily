@@ -4,6 +4,7 @@ import type {
   TDomilyRenderProperties,
   TSvgElementTagNameMap,
   DOMilyChildren,
+  DOMilyCascadingStyleSheets,
 } from "../core/render/type/types";
 import DomilyFragment from "../core/render/custom-elements/fragment";
 import DomilyRouterView from "../core/render/custom-elements/router-view";
@@ -339,6 +340,58 @@ export function h<
     ? () => document.createElementNS(svgNamespace, tagName.replace(/^SVG:/, ""))
     : () => document.createElement(tagName);
   return internalCreateElement(creator, properties, children);
+}
+
+export function handleHiddenStyle(
+  style: string | Partial<CSSStyleDeclaration> | undefined,
+  hidden: boolean | undefined
+) {
+  return hidden
+    ? typeof style === "string"
+      ? `${style}${style.endsWith(";") ? "" : ";"}display:none!important;`
+      : { ...style, display: "none!important" }
+    : style;
+}
+
+export function handleCSS(
+  css?: string | DOMilyCascadingStyleSheets
+): HTMLStyleElement | null {
+  if (!css) {
+    return null;
+  }
+
+  if (typeof css === "string") {
+    return h("style", null, document.createTextNode(css));
+  }
+
+  const selectors = Object.keys(css);
+  if (!selectors.length) {
+    return null;
+  }
+
+  function objectToCSS(properties: Record<string, any>) {
+    let cssString = "";
+    for (const [prop, value] of Object.entries(properties)) {
+      if (typeof value === "string") {
+        const cssProperty = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+        cssString += `${cssProperty}: ${value};`;
+      }
+      if (typeof value === "object") {
+        cssString += `${prop} {${objectToCSS(value)}}`;
+      }
+    }
+    return cssString.trim();
+  }
+
+  function jsonToCSS(cssRecord: DOMilyCascadingStyleSheets): string {
+    let cssString = "";
+    for (const [selector, properties] of Object.entries(cssRecord)) {
+      cssString += `${selector} {${objectToCSS(properties)}}`;
+    }
+    return cssString.trim();
+  }
+
+  return h("style", null, document.createTextNode(jsonToCSS(css)));
 }
 
 export function domMountToParent(
