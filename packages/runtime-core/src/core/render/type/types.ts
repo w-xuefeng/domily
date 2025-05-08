@@ -132,10 +132,10 @@ export interface IDomilyCustomElementOptions {
 
 export type DOMilyChildDOM = HTMLElement | Node | string | null | undefined;
 export type DOMilyChild =
-  | IDomilyRenderOptions<any, any>
-  | DomilyRenderSchema<any, any>
-  | DOMilyMountableRender<any, any>
-  | DOMilyCustomElementComponent<any, any>;
+  | IDomilyRenderOptions<any, any, any>
+  | DomilyRenderSchema<any, any, any>
+  | DOMilyMountableRender<any, any, any>
+  | DOMilyCustomElementComponent<any, any, any>;
 
 export type DOMilyChildren =
   | (DOMilyChild | DOMilyChildDOM)[]
@@ -147,7 +147,8 @@ export type DOMilyChildren =
  */
 export interface IDomilyRenderOptions<
   CustomElementMap = {},
-  K extends DOMilyTags<CustomElementMap> = DOMilyTags
+  K extends DOMilyTags<CustomElementMap> = DOMilyTags,
+  ListData = any
 > {
   /**
    * base info
@@ -187,6 +188,14 @@ export interface IDomilyRenderOptions<
   domShow?: boolean | (() => boolean);
 
   /**
+   * list-map
+   */
+  mapList?: {
+    list: ListData[];
+    map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
+  };
+
+  /**
    * custom element
    */
   customElement?: IDomilyCustomElementOptions;
@@ -194,13 +203,14 @@ export interface IDomilyRenderOptions<
 
 export interface DOMilyCustomElementComponent<
   CustomTagNameMap = {},
-  K extends DOMilyTags<CustomTagNameMap> = DOMilyTags
+  K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
+  ListData = any
 > {
   name: string;
   customElementComponent:
-    | IDomilyRenderOptions<CustomTagNameMap, K>
-    | DomilyRenderSchema<CustomTagNameMap, K>
-    | DOMilyMountableRender<CustomTagNameMap, K>;
+    | IDomilyRenderOptions<CustomTagNameMap, K, ListData>
+    | DomilyRenderSchema<CustomTagNameMap, K, ListData>
+    | DOMilyMountableRender<CustomTagNameMap, K, ListData>;
 }
 
 /**
@@ -208,14 +218,15 @@ export interface DOMilyCustomElementComponent<
  */
 export interface DOMilyMountableRender<
   CustomTagNameMap = {},
-  K extends DOMilyTags<CustomTagNameMap> = DOMilyTags
+  K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
+  ListData = any
 > {
   dom:
     | (K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
         ? WithCustomElementTagNameMap<CustomTagNameMap>[K]
         : HTMLElement | Node)
     | null;
-  schema: DomilyRenderSchema<CustomTagNameMap, K>;
+  schema: DomilyRenderSchema<CustomTagNameMap, K, ListData>;
   mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
   unmount: () => void;
 }

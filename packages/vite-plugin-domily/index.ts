@@ -1,6 +1,6 @@
 import { transformDOMSingleFileComponentCode } from "./compiler";
-import type { Plugin } from "vite";
 import { merge, type VitePluginDomilyOptions } from "./compiler/utils";
+import type { Plugin } from "vite";
 
 export { type VitePluginDomilyOptions };
 
@@ -8,7 +8,7 @@ const sfcExt = [".d.md"];
 
 const defaultOptions = {
   customElement: {
-    enable: true,
+    enable: false,
     prefix: "d-",
   },
 };

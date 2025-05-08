@@ -2,51 +2,41 @@
 {
   "tag": "div",
   "className": "menu",
-  "children": [
-    {
-      "tag": "div",
-      "className": "menu-item",
-      "text": "菜单1",
-      "on": {
-        "click": "@menuClick(1)"
-      }
-    },
-    {
-      "tag": "div",
-      "className": "menu-item",
-      "text": "菜单2",
-      "on": {
-        "click": "@menuClick(2)"
-      }
-    },
-    {
-      "tag": "div",
-      "className": "menu-item",
-      "text": "菜单3",
-      "on": {
-        "click": "@menuClick(3)"
-      }
-    },
-    {
-      "tag": "div",
-      "className": "menu-item",
-      "text": "菜单4",
-      "on": {
-        "click": "@menuClick(4)"
-      }
-    }
-  ]
+  "mapList": {
+    "list": ":menus",
+    "map": "@itemRender"
+  }
 }
 ```
 
 ```ts
-const handleClick = (e: Event, item: number) => {
+const handleClick = (item: number) => {
   console.log("🚀 ~ handleClick ~ item:", item)
-  console.log("🚀 ~ handleClick ~ event", e);
 };
 const menuClick = (item: string) => {
   return handleClick.bind(null, item);
 };
+const menus = [
+  {
+    title: '首页',
+  },
+  {
+    title: '列表',
+  },
+  {
+    title: '详情',
+  }
+]
+const itemRender = (menu) => {
+  return {
+    tag: 'div',
+    className: 'menu-item',
+    text: menu.title,
+    on: {
+      click: menuClick(menu)
+    }
+  }
+}
 ```
 
 ```less

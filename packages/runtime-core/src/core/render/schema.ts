@@ -1,5 +1,7 @@
 import type {
   DOMilyCascadingStyleSheets,
+  DOMilyChild,
+  DOMilyChildDOM,
   DOMilyChildren,
   DOMilyEventKeys,
   DOMilyEventListenerRecord,
@@ -21,14 +23,16 @@ import {
   txt,
 } from "../../utils/dom";
 import { merge } from "../../utils/obj";
+import { isFunction } from "../../utils/is";
 import { domilyChildToDOM } from "./shared/parse";
 import DomilyFragment from "./custom-elements/fragment";
 import DomilyRouterView from "./custom-elements/router-view";
 
 export default class DomilyRenderSchema<
   CustomElementMap = {},
-  K extends DOMilyTags<CustomElementMap> = DOMilyTags
-> implements IDomilyRenderOptions<CustomElementMap, K>
+  K extends DOMilyTags<CustomElementMap> = DOMilyTags,
+  ListData = any
+> implements IDomilyRenderOptions<CustomElementMap, K, ListData>
 {
   /**
    * base info
@@ -66,6 +70,14 @@ export default class DomilyRenderSchema<
    */
   domIf?: boolean | (() => boolean);
   domShow?: boolean | (() => boolean);
+
+  /**
+   * list-loop
+   */
+  mapList?: {
+    list: ListData[];
+    map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
+  };
 
   /**
    * custom element
@@ -122,6 +134,11 @@ export default class DomilyRenderSchema<
      */
     this.domIf = this.handleDIf(schema.domIf);
     this.domShow = this.handleDShow(schema.domShow);
+
+    /**
+     * list-loop
+     */
+    this.mapList = schema.mapList;
 
     /**
      * custom element
@@ -263,6 +280,23 @@ export default class DomilyRenderSchema<
   }
 
   render(): HTMLElement | Node | null {
+    /**
+     * handle list-map
+     */
+    if (this.mapList) {
+      const { list, map } = this.mapList;
+      if (Array.isArray(list) && isFunction(map)) {
+        for (let i = 0; i < list.length; i++) {
+          const child = map.apply(list, [list[i], i]);
+          if (!this.children) {
+            this.children = [child];
+          } else {
+            this.children.push(child);
+          }
+        }
+      }
+    }
+
     /**
      * handle dom-if
      */
