@@ -16,6 +16,7 @@
       "ESNext"
     ],
     "module": "ESNext",
+    "skipLibCheck": true,
     "moduleResolution": "bundler",
     "declaration": true,
     "declarationDir": "./lib/types",

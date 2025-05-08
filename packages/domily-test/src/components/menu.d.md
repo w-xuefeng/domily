@@ -4,42 +4,30 @@
   "className": "menu",
   "mapList": {
     "list": ":menus",
-    "map": "@itemRender"
+    "map": ":menuItem"
   }
 }
 ```
 
 ```ts
-const handleClick = (item: number) => {
-  console.log("🚀 ~ handleClick ~ item:", item)
-};
-const menuClick = (item: string) => {
-  return handleClick.bind(null, item);
-};
+import menuItem from './menu-item.d.md';
 const menus = [
   {
     title: '首页',
+    path: '/'
   },
   {
     title: '列表',
+    path: '/home'
   },
   {
     title: '详情',
+    path: '/home/details'
   }
 ]
-const itemRender = (menu) => {
-  return {
-    tag: 'div',
-    className: 'menu-item',
-    text: menu.title,
-    on: {
-      click: menuClick(menu)
-    }
-  }
-}
 ```
 
-```less
+```scss
 .menu {
   width: 100%;
   height: 100%;
@@ -57,7 +45,7 @@ const itemRender = (menu) => {
     align-items: center;
     justify-content: center;
     &:hover {
-      background-color: hsl(from var(--menu-item-background) h s calc(l - 20));
+      background-color: hsl(from var(--menu-item-background) h s calc(l - 10));
     }
   }
 }

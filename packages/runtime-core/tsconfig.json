@@ -24,8 +24,5 @@
   },
   "include": [
     "./src/**/*.ts",
-    "./test/**/*.ts",
-    "test/component.js",
-    "test/main.js"
   ]
 }

@@ -18,6 +18,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "declaration": true,
+    "skipLibCheck": true,
     "declarationDir": "./lib/types",
     "emitDeclarationOnly": true,
     "rootDir": "./src",

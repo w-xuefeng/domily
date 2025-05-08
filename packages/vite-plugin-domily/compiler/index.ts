@@ -6,6 +6,7 @@ import {
   type ModuleItem,
 } from "@swc/core";
 import type { VitePluginDomilyOptions } from "./utils";
+
 type Mode = "dev" | "build" | "unknown";
 
 function filterCode(
@@ -14,7 +15,7 @@ function filterCode(
   options: {
     ts?: boolean;
     mode?: Mode;
-  }
+  },
 ) {
   const ast = parseSync(code, {
     syntax: options.ts ? "typescript" : "ecmascript",
@@ -100,10 +101,10 @@ function handleScript(code: {
   cssPreprocessor: string;
 }) {
   code.json = code.json
-    .replaceAll(/"@(?<event>\w+\(?[\w,?]*\)?)"/g, (_, match) => {
+    .replaceAll(/"@(?<event>[\w.?]+\(?[\w,?]*\)?)"/g, (_, match) => {
       return match;
     })
-    .replaceAll(/":(?<bind>\w+\(?[\w,?]*\)?)"/g, (_, match) => {
+    .replaceAll(/":(?<bind>[\w.?]+\(?[\w,?]*\)?)"/g, (_, match) => {
       return match;
     });
 
@@ -118,7 +119,7 @@ async function handleStyle(
     ts: boolean;
     cssPreprocessor: string;
   },
-  mode: Mode
+  mode: Mode,
 ) {
   if (code.cssPreprocessor === "css") {
     return code;
@@ -190,22 +191,25 @@ async function generateCodeText({
     ts,
     mode,
   });
-  return `${imports}export default function(){${others}return ${returnTemplate}}`;
+  const withProps = [others, returnTemplate].some((e) => e.includes("props"))
+    ? "props"
+    : "";
+  return `${imports}export default function(${withProps}){\n${others}return ${returnTemplate}\n}`;
 }
 
 export async function transformDOMSingleFileComponentCode(
   name: string,
   code: string,
   mode: Mode,
-  options: VitePluginDomilyOptions
+  options: VitePluginDomilyOptions,
 ) {
   const { script, style, json, ts } = await handleStyle(
     handleScript(parse(code)),
-    mode
+    mode,
   );
   const template = handleTemplateStyle(json, style);
 
-  const codeText = await generateCodeText({
+  let codeText = await generateCodeText({
     name,
     script,
     template,
