@@ -15,7 +15,7 @@ import type {
  * - class DomilyRenderSchema
  */
 export function isDomilyRenderSchema(
-  obj: object,
+  obj: object
 ): obj is DomilyRenderSchema<any, any> {
   return (
     obj instanceof DomilyRenderSchema ||
@@ -32,7 +32,7 @@ export function isDomilyRenderSchema(
  * - { name, customElementComponent }
  */
 export function isDOMilyCustomElementComponent(
-  obj: object,
+  obj: object
 ): obj is DOMilyCustomElementComponent<any, any> {
   return (
     isObject(obj) &&
@@ -52,7 +52,7 @@ export function isDOMilyCustomElementComponent(
  * - { dom, schema, mount, unmount }
  */
 export function isDOMilyMountableRender(
-  obj: object,
+  obj: object
 ): obj is DOMilyMountableRender<any, any> {
   return (
     isObject(obj) &&
@@ -72,7 +72,7 @@ export function isDOMilyMountableRender(
  * - { tag }
  */
 export function isDomilyRenderOptions(
-  obj: object,
+  obj: object
 ): obj is IDomilyRenderOptions<any, any> {
   return (
     isObject(obj) &&
@@ -83,10 +83,14 @@ export function isDomilyRenderOptions(
 }
 
 export function domilyChildToDomilyRenderSchema(
-  input?: DOMilyChild,
+  input?: DOMilyChild | (() => DOMilyChild)
 ): DomilyRenderSchema<any, any> | null {
   if (!input) {
     return null;
+  }
+
+  if (isFunction(input)) {
+    return domilyChildToDomilyRenderSchema(input());
   }
 
   if (isDomilyRenderSchema(input)) {
@@ -95,7 +99,7 @@ export function domilyChildToDomilyRenderSchema(
 
   if (isDOMilyCustomElementComponent(input)) {
     const schema = domilyChildToDomilyRenderSchema(
-      input.customElementComponent,
+      input.customElementComponent
     );
     if (!schema) {
       return null;
@@ -105,7 +109,7 @@ export function domilyChildToDomilyRenderSchema(
         enable: true,
         name: input.name,
       },
-      schema.customElement,
+      schema.customElement
     );
     return schema;
   }
@@ -122,7 +126,7 @@ export function domilyChildToDomilyRenderSchema(
 }
 
 export function domilyChildToDOMilyMountableRender(
-  input?: DOMilyChild,
+  input?: DOMilyChild | (() => DOMilyChild)
 ): DOMilyMountableRender<any, any> | null {
   if (!input) {
     return null;
@@ -143,12 +147,12 @@ export function domilyChildToDOMilyMountableRender(
       schema,
       dom: schema.render(),
     },
-    "dom",
+    "dom"
   );
 }
 
 export function domilyChildToDOM(
-  child: DOMilyChild | DOMilyChildDOM,
+  child: DOMilyChild | DOMilyChildDOM
 ): HTMLElement | Node | null {
   if (!child) {
     return null;

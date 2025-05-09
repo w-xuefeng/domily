@@ -1,10 +1,12 @@
+const EVENT_MAP_KEY = "__$DOMilyGlobalEventMap";
+
 Reflect.set(
   globalThis,
-  "globalEventMap",
-  Reflect.get(globalThis, "globalEventMap") || new Map<string, Function[]>()
+  EVENT_MAP_KEY,
+  Reflect.get(globalThis, EVENT_MAP_KEY) || new Map<string, Function[]>()
 );
 
-const globalEventMap = Reflect.get(globalThis, "globalEventMap") as Map<
+const globalEventMap = Reflect.get(globalThis, EVENT_MAP_KEY) as Map<
   string,
   Function[]
 >;
@@ -46,6 +48,18 @@ export class EventBus {
     event.forEach((e) => {
       e(value);
     });
+  }
+
+  static has(eventName: string) {
+    return globalEventMap.has(eventName);
+  }
+
+  static get size() {
+    return globalEventMap.size;
+  }
+
+  static listenerCount(eventName: string) {
+    return globalEventMap.get(eventName)?.length || 0;
   }
 }
 

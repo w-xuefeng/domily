@@ -31,7 +31,7 @@ import DomilyRouterView from "./custom-elements/router-view";
 export default class DomilyRenderSchema<
   CustomElementMap = {},
   K extends DOMilyTags<CustomElementMap> = DOMilyTags,
-  ListData = any,
+  ListData = any
 > implements IDomilyRenderOptions<CustomElementMap, K, ListData>
 {
   /**
@@ -94,7 +94,7 @@ export default class DomilyRenderSchema<
   static create<
     CustomElementMap = {},
     K extends DOMilyTags<CustomElementMap> = DOMilyTags,
-    ListData = any,
+    ListData = any
   >(schema: IDomilyRenderOptions<CustomElementMap, K, ListData>) {
     return new DomilyRenderSchema<CustomElementMap, K, ListData>(schema);
   }
@@ -150,7 +150,7 @@ export default class DomilyRenderSchema<
 
   handleEventsOption(
     originalOptions: AddEventListenerOptions | undefined,
-    abortController: AbortController,
+    abortController: AbortController
   ) {
     if (originalOptions?.signal) {
       originalOptions.signal.addEventListener("abort", () => {
@@ -174,7 +174,7 @@ export default class DomilyRenderSchema<
           const abortController = new AbortController();
           this.eventsAbortController.set(
             key as DOMilyEventKeys,
-            abortController,
+            abortController
           );
           if (typeof value === "function") {
             return [
@@ -216,7 +216,7 @@ export default class DomilyRenderSchema<
           }
           return [];
         })
-        .filter((e) => e.length),
+        .filter((e) => e.length)
     ) as DOMilyEventListenerRecord<DOMilyEventKeys>;
   }
 
@@ -317,8 +317,8 @@ export default class DomilyRenderSchema<
       typeof this.domShow === "function"
         ? !this.domShow()
         : typeof this.domShow === "boolean"
-          ? !this.domShow
-          : false;
+        ? !this.domShow
+        : false;
 
     /**
      * Text Node
@@ -351,8 +351,8 @@ export default class DomilyRenderSchema<
       ...(this.html
         ? { innerHTML: this.html }
         : this.text
-          ? { innerText: this.text }
-          : {}),
+        ? { innerText: this.text }
+        : {}),
       attrs: this.attrs,
       style,
       on: this.on,
@@ -367,13 +367,13 @@ export default class DomilyRenderSchema<
     }
 
     return this.domAOPTask(
-      h<CustomElementMap, K>(this.tag, props, children) as HTMLElement,
+      h<CustomElementMap, K>(this.tag, props, children) as HTMLElement
     );
   }
 }
 
 export function render<K extends DOMilyTags, ListData = any>(
-  schema: IDomilyRenderOptions<{}, K, ListData>,
+  schema: IDomilyRenderOptions<{}, K, ListData>
 ) {
   const domilySchema = DomilyRenderSchema.create<{}, K, ListData>(schema);
   const returnValue = mountable(
@@ -381,7 +381,7 @@ export function render<K extends DOMilyTags, ListData = any>(
       dom: domilySchema.render(),
       schema: domilySchema,
     },
-    "dom",
+    "dom"
   );
   return returnValue;
 }
@@ -389,7 +389,7 @@ export function render<K extends DOMilyTags, ListData = any>(
 export function registerElement<ThisArgs extends object, T extends string>(
   thisArgs: ThisArgs,
   tag: T,
-  constructor?: CustomElementConstructor | undefined,
+  constructor?: CustomElementConstructor | undefined
 ) {
   if (constructor && !customElements.get(tag)) {
     customElements.define(tag, constructor);

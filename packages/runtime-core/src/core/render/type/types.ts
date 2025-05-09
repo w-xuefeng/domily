@@ -32,7 +32,7 @@ export type WithCustomElementTagNameMap<CustomTagNameMap = {}> =
 
 export type TDomilyRenderProperties<
   C,
-  K extends keyof WithCustomElementTagNameMap<C>
+  K extends keyof WithCustomElementTagNameMap<C>,
 > = Record<string, any> &
   Partial<Record<keyof WithCustomElementTagNameMap<C>[K], any>> & {
     attrs?: Record<string, string>;
@@ -71,14 +71,14 @@ export type ArrayConvertToHTMLElementMap<T extends readonly string[]> = {
 export type OptionalWith<T, P, D> = P extends undefined
   ? T
   : P extends null
-  ? T
-  : D;
+    ? T
+    : D;
 
 export type CustomParamsToMap<P> = P extends readonly string[]
   ? ArrayConvertToHTMLElementMap<P>
   : P extends Record<string, any>
-  ? RecordConvertToHTMLElementMap<P>
-  : never;
+    ? RecordConvertToHTMLElementMap<P>
+    : never;
 
 export type DOMilyTags<CustomElementMap = {}> =
   keyof WithCustomElementTagNameMap<CustomElementMap>;
@@ -113,7 +113,7 @@ export interface DOMilyCascadingStyleSheets
  */
 export type DOMilyRenderOptionsPropsOrAttrs<
   CustomElementMap,
-  K extends DOMilyTags<CustomElementMap>
+  K extends DOMilyTags<CustomElementMap>,
 > = Partial<
   Record<keyof WithCustomElementTagNameMap<CustomElementMap>[K], any>
 > &
@@ -148,7 +148,7 @@ export type DOMilyChildren =
 export interface IDomilyRenderOptions<
   CustomElementMap = {},
   K extends DOMilyTags<CustomElementMap> = DOMilyTags,
-  ListData = any
+  ListData = any,
 > {
   /**
    * base info
@@ -204,7 +204,7 @@ export interface IDomilyRenderOptions<
 export interface DOMilyCustomElementComponent<
   CustomTagNameMap = {},
   K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
-  ListData = any
+  ListData = any,
 > {
   name: string;
   customElementComponent:
@@ -219,7 +219,7 @@ export interface DOMilyCustomElementComponent<
 export interface DOMilyMountableRender<
   CustomTagNameMap = {},
   K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
-  ListData = any
+  ListData = any,
 > {
   dom:
     | (K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>

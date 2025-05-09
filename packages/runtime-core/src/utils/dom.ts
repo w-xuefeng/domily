@@ -417,36 +417,6 @@ export function domMountToParent(
   };
 }
 
-export function proxyDomilySchema(
-  domilySchema: DomilyRenderSchema<any, any>,
-  targetObject: { dom: HTMLElement | Node | null }
-) {
-  const proxyKeys = [
-    "props",
-    "attrs",
-    "text",
-    "html",
-    "id",
-    "className",
-    "style",
-    "domIf",
-    "domShow",
-  ];
-  const domilySchemaProxy = new Proxy(domilySchema, {
-    set(target, p, newValue, receiver) {
-      const rs = Reflect.set(target, p, newValue, receiver);
-      if (!proxyKeys.includes(p as string)) {
-        return rs;
-      }
-      const currentDOM = targetObject.dom;
-      const nextDOM = domilySchema.render();
-      targetObject.dom = replaceDOM(currentDOM, nextDOM);
-      return rs;
-    },
-  });
-  return domilySchemaProxy;
-}
-
 export function removeDOM(dom: HTMLElement | Node | ShadowRoot) {
   if ("remove" in dom && typeof dom.remove === "function") {
     dom.remove();
@@ -498,7 +468,7 @@ export function mountable<
   T extends {
     [k in K]: HTMLElement | Node | null;
   } & {
-    schema: DomilyRenderSchema<any, any>;
+    schema: DomilyRenderSchema<any, any, any>;
   }
 >(data: T, domKey = "dom" as K) {
   return {
@@ -507,7 +477,7 @@ export function mountable<
     mount(
       parent: HTMLElement | Document | ShadowRoot | string = document.body
     ) {
-      this.unmount = domMountToParent(data[domKey], parent);
+      this.unmount = domMountToParent(this[domKey], parent);
     },
   };
 }

@@ -11,8 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@domily/runtime-core": "workspace:*",
-    "@domily/router": "workspace:*"
+    "@domily/router": "workspace:*",
+    "@domily/runtime-core": "workspace:*"
   },
   "devDependencies": {
     "@types/less": "^3.0.8",

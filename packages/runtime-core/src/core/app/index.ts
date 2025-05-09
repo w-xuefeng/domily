@@ -12,7 +12,7 @@ if (!Reflect.get(globalThis, GLOBAL_APP_INSTANCE_KEY)) {
   Reflect.set(
     globalThis,
     GLOBAL_APP_INSTANCE_KEY,
-    new Map<string | symbol, DomilyAppSchema<any, any>>()
+    new Map<string | symbol, DomilyAppSchema<any, any>>(),
   );
 }
 
@@ -30,7 +30,7 @@ export type DOMilyPlugin<T, Options = {}> =
 
 export const DomilyAppInstances = Reflect.get(
   globalThis,
-  GLOBAL_APP_INSTANCE_KEY
+  GLOBAL_APP_INSTANCE_KEY,
 ) as Map<string | symbol, DomilyAppSchema<any, any>>;
 
 export type WithBaseProps<T = Record<string, any>> = T & {
@@ -39,52 +39,58 @@ export type WithBaseProps<T = Record<string, any>> = T & {
 
 export type TDomilyAppSchema<
   GlobalProperties extends Record<string, any> = Record<string, any>,
-  AppProps extends Record<string, any> = Record<string, any>
 > = {
   namespace?: string | symbol;
   el?: string | HTMLElement;
   title?: string;
   globalProperties?: GlobalProperties;
   mode?: "SPA" | "MPA";
-  app: (props?: AppProps) => DOMilyChild;
 };
 
 export default class DomilyAppSchema<
   GlobalProperties extends Record<string, any> = Record<string, any>,
-  AppProps extends Record<string, any> = Record<string, any>
+  AppProps extends Record<string, any> = Record<string, any>,
 > {
   el: string | HTMLElement;
   namespace: string | symbol;
   title: string;
   mode: "SPA" | "MPA";
   globalProperties: GlobalProperties;
-  app: (props?: AppProps) => DOMilyMountableRender<any, any> | null;
+  render: (props?: AppProps) => DOMilyMountableRender<any, any> | null;
 
-  constructor(schema: TDomilyAppSchema<GlobalProperties>) {
+  constructor(
+    render: (props?: AppProps) => () => DOMilyChild,
+    schema?: TDomilyAppSchema<GlobalProperties>,
+  ) {
     this.namespace =
-      schema.namespace || Symbol(`domily-app-${DomilyAppInstances.size + 1}`);
-    this.el = schema.el || DomilyAppSchemaDefault.el;
-    this.title = schema.title || DomilyAppSchemaDefault.title;
-    this.mode = schema.mode || DomilyAppSchemaDefault.mode;
-    this.globalProperties = (schema.globalProperties || {}) as GlobalProperties;
-    this.app = (props) =>
+      schema?.namespace || Symbol(`domily-app-${DomilyAppInstances.size + 1}`);
+    this.el = schema?.el || DomilyAppSchemaDefault.el;
+    this.title = schema?.title || DomilyAppSchemaDefault.title;
+    this.mode = schema?.mode || DomilyAppSchemaDefault.mode;
+    this.globalProperties = (schema?.globalProperties ||
+      {}) as GlobalProperties;
+    this.render = (props) =>
       domilyChildToDOMilyMountableRender(
-        schema.app(
+        render(
           Object.assign(
             {
               namespace: this.namespace,
             },
-            props
+            props,
           )
-        )
+        ),
       );
     DomilyAppInstances.set(this.namespace, this);
   }
 
   static create<
-    GlobalProperties extends Record<string, any> = Record<string, any>
-  >(schema: TDomilyAppSchema<GlobalProperties>) {
-    return new DomilyAppSchema(schema);
+    GlobalProperties extends Record<string, any> = Record<string, any>,
+    AppProps extends Record<string, any> = Record<string, any>,
+  >(
+    render: (props?: AppProps) => () => DOMilyChild,
+    schema?: TDomilyAppSchema<GlobalProperties>,
+  ) {
+    return new DomilyAppSchema(render, schema);
   }
 
   use<T, Options = {}>(plugin: DOMilyPlugin<T, Options>, options?: Options) {
@@ -99,22 +105,29 @@ export default class DomilyAppSchema<
   }
 }
 
-export function app<
+export function createApp<
   GlobalProperties extends Record<string, any> = Record<string, any>,
-  AppProps extends Record<string, any> = Record<string, any>
->(schema: TDomilyAppSchema<GlobalProperties>, appProps?: AppProps) {
-  const appInstance = DomilyAppSchema.create<GlobalProperties>(schema);
+  AppProps extends Record<string, any> = Record<string, any>,
+>(
+  render: (props?: AppProps) => () => DOMilyChild,
+  schema?: TDomilyAppSchema<GlobalProperties>,
+  appProps?: AppProps,
+) {
+  const appInstance = DomilyAppSchema.create<GlobalProperties, AppProps>(
+    render,
+    schema,
+  );
   return {
     app: appInstance,
     mount(parent?: HTMLElement | Document | ShadowRoot | string) {
-      const comp = appInstance.app(appProps);
+      const comp = appInstance.render(appProps);
       if (!comp) {
         return null;
       }
       comp.mount(parent || appInstance.el);
       EventBus.emit(
         EVENTS.APP_MOUNTED,
-        $el<HTMLElement>(parent || appInstance.el)
+        $el<HTMLElement>(parent || appInstance.el),
       );
       return () => {
         comp.unmount();
@@ -124,7 +137,7 @@ export function app<
 }
 
 export function getCurrentInstance(
-  namespace?: string | symbol
+  namespace?: string | symbol,
 ): undefined | DomilyAppSchema<any, any> {
   if (!namespace && DomilyAppInstances.size === 1) {
     return Array.from(DomilyAppInstances.values())[0];
