@@ -6,13 +6,16 @@ import {
   type AsyncDOMilyComponentModule,
   type DOMilyMountableRender,
   DomilyAppInstances,
-} from '@domily/runtime-core';
-import { ROUTER_EVENTS } from './event';
-import type { IMatchedPage } from './base';
+} from "@domily/runtime-core";
+import { ROUTER_EVENTS } from "./event";
+import type { IMatchedPage } from "./base";
 const { isFunction, isThenable } = ISUtils;
 const { EventBus } = EB;
 
-export interface IDomilyPageSchema<PageMeta = {}, Props extends Record<string, any> = {}> {
+export interface IDomilyPageSchema<
+  PageMeta = {},
+  Props extends Record<string, any> = {}
+> {
   name?: string;
   namespace?: string | symbol;
   path: string;
@@ -24,7 +27,10 @@ export interface IDomilyPageSchema<PageMeta = {}, Props extends Record<string, a
   props?: Props;
 }
 
-export default class DomilyPageSchema<PageMeta = {}, Props extends Record<string, any> = {}> {
+export default class DomilyPageSchema<
+  PageMeta = {},
+  Props extends Record<string, any> = {}
+> {
   name?: string;
   namespace: string | symbol;
   path: string;
@@ -39,33 +45,38 @@ export default class DomilyPageSchema<PageMeta = {}, Props extends Record<string
 
   constructor(schema: IDomilyPageSchema<PageMeta, Props>) {
     this.name = schema.name;
-    this.namespace = schema.namespace || Symbol('DomilyAppNamespace');
+    this.namespace = schema.namespace || Symbol("DomilyAppNamespace");
     this.path = schema.path;
     this.alias = schema.alias;
     this.component = schema.component;
     this.redirect = schema.redirect;
     this.meta = schema.meta;
     this.props = schema.props;
-    this.children = schema.children?.map(e => {
+    this.children = schema.children?.map((e) => {
       e.namespace = e.namespace ?? this.namespace;
       return new DomilyPageSchema<unknown>(e);
     });
   }
 
-  static create<PageMeta = {}, Props extends Record<string, any> = {}>(schema: IDomilyPageSchema<PageMeta, Props>) {
+  static create<PageMeta = {}, Props extends Record<string, any> = {}>(
+    schema: IDomilyPageSchema<PageMeta, Props>
+  ) {
     return new DomilyPageSchema(schema);
   }
 
-  #toView(component: DOMilyComponent, el: HTMLElement | Document | ShadowRoot | string) {
+  #toView(
+    component: DOMilyComponent,
+    el: HTMLElement | Document | ShadowRoot | string
+  ) {
     const comp = parseComponent(
       Object.assign(
         {
           namespace: this.namespace,
         },
-        this.props,
+        this.props
       ),
       component,
-      true,
+      true
     );
     if (!comp) {
       return null;
@@ -75,13 +86,14 @@ export default class DomilyPageSchema<PageMeta = {}, Props extends Record<string
       ROUTER_EVENTS.PAGE_MOUNTED,
       Object.assign(this, {
         comp,
-      }),
+      })
     );
     return comp;
   }
 
   render(el: HTMLElement | Document | ShadowRoot | string) {
-    const { resolve, reject, promise } = Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
+    const { resolve, reject, promise } =
+      Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
 
     if (this.redirect) {
       const app = DomilyAppInstances.get(this.namespace);
@@ -127,7 +139,7 @@ export default class DomilyPageSchema<PageMeta = {}, Props extends Record<string
 }
 
 export function page<PageMeta = {}, Props extends Record<string, any> = {}>(
-  schema: IDomilyPageSchema<PageMeta, Props>,
+  schema: IDomilyPageSchema<PageMeta, Props>
 ) {
   const pageInstance = DomilyPageSchema.create(schema);
 

@@ -1,12 +1,10 @@
-import { createDomily } from '@domily/runtime-core';
+import { createApp } from "@domily/runtime-core";
 
-import App from './app';
-import router from './routers';
-import './css.css';
+import App from "./app";
+import router from "./routers";
+import "./css.css";
 
-const { app, mount } = createDomily().app({
-  app: App,
-});
+const { app, mount } = createApp(App);
 
 app.use(router);
 

@@ -15,10 +15,10 @@
     }
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@domily/runtime-core": "workspace:*"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "@domily/runtime-core": "workspace:*"
   }
 }

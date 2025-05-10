@@ -2,6 +2,8 @@ import DomilyFragment from "../custom-elements/fragment";
 import DomilyRouterView from "../custom-elements/router-view";
 import type DomilyRenderSchema from "../schema";
 
+export type WithFuncType<T, A = never> = T | ((...args: A[]) => T);
+
 /**
  * ==================== about tag ====================
  */
@@ -32,7 +34,7 @@ export type WithCustomElementTagNameMap<CustomTagNameMap = {}> =
 
 export type TDomilyRenderProperties<
   C,
-  K extends keyof WithCustomElementTagNameMap<C>,
+  K extends keyof WithCustomElementTagNameMap<C>
 > = Record<string, any> &
   Partial<Record<keyof WithCustomElementTagNameMap<C>[K], any>> & {
     attrs?: Record<string, string>;
@@ -71,14 +73,14 @@ export type ArrayConvertToHTMLElementMap<T extends readonly string[]> = {
 export type OptionalWith<T, P, D> = P extends undefined
   ? T
   : P extends null
-    ? T
-    : D;
+  ? T
+  : D;
 
 export type CustomParamsToMap<P> = P extends readonly string[]
   ? ArrayConvertToHTMLElementMap<P>
   : P extends Record<string, any>
-    ? RecordConvertToHTMLElementMap<P>
-    : never;
+  ? RecordConvertToHTMLElementMap<P>
+  : never;
 
 export type DOMilyTags<CustomElementMap = {}> =
   keyof WithCustomElementTagNameMap<CustomElementMap>;
@@ -113,7 +115,7 @@ export interface DOMilyCascadingStyleSheets
  */
 export type DOMilyRenderOptionsPropsOrAttrs<
   CustomElementMap,
-  K extends DOMilyTags<CustomElementMap>,
+  K extends DOMilyTags<CustomElementMap>
 > = Partial<
   Record<keyof WithCustomElementTagNameMap<CustomElementMap>[K], any>
 > &
@@ -138,7 +140,7 @@ export type DOMilyChild =
   | DOMilyCustomElementComponent<any, any, any>;
 
 export type DOMilyChildren =
-  | (DOMilyChild | DOMilyChildDOM)[]
+  | (DOMilyChild | DOMilyChildDOM | (() => DOMilyChild | DOMilyChildDOM))[]
   | undefined
   | null;
 
@@ -148,32 +150,32 @@ export type DOMilyChildren =
 export interface IDomilyRenderOptions<
   CustomElementMap = {},
   K extends DOMilyTags<CustomElementMap> = DOMilyTags,
-  ListData = any,
+  ListData = any
 > {
   /**
    * base info
    */
   tag: K;
-  id?: string;
-  className?: string;
+  id?: WithFuncType<string>;
+  className?: WithFuncType<string>;
 
   /**
    * style info
    */
-  css?: string | DOMilyCascadingStyleSheets;
-  style?: string | Partial<CSSStyleDeclaration>;
+  css?: WithFuncType<string | DOMilyCascadingStyleSheets>;
+  style?: WithFuncType<string | Partial<CSSStyleDeclaration>>;
 
   /**
    * properties and attributes
    */
-  props?: DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>;
-  attrs?: DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>;
+  props?: WithFuncType<DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>>;
+  attrs?: WithFuncType<DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>>;
 
   /**
    * content and children
    */
-  text?: string | number;
-  html?: string;
+  text?: WithFuncType<string | number>;
+  html?: WithFuncType<string>;
   children?: DOMilyChildren;
 
   /**
@@ -184,8 +186,8 @@ export interface IDomilyRenderOptions<
   /**
    * display controller
    */
-  domIf?: boolean | (() => boolean);
-  domShow?: boolean | (() => boolean);
+  domIf?: WithFuncType<boolean>;
+  domShow?: WithFuncType<boolean>;
 
   /**
    * list-map
@@ -204,7 +206,7 @@ export interface IDomilyRenderOptions<
 export interface DOMilyCustomElementComponent<
   CustomTagNameMap = {},
   K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
-  ListData = any,
+  ListData = any
 > {
   name: string;
   customElementComponent:
@@ -219,13 +221,8 @@ export interface DOMilyCustomElementComponent<
 export interface DOMilyMountableRender<
   CustomTagNameMap = {},
   K extends DOMilyTags<CustomTagNameMap> = DOMilyTags,
-  ListData = any,
+  ListData = any
 > {
-  dom:
-    | (K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
-        ? WithCustomElementTagNameMap<CustomTagNameMap>[K]
-        : HTMLElement | Node)
-    | null;
   schema: DomilyRenderSchema<CustomTagNameMap, K, ListData>;
   mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
   unmount: () => void;

@@ -33,6 +33,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "alien-signals": "^2.0.4",
     "path-to-regexp": "^8.2.0"
   }
 }

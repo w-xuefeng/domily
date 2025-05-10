@@ -49,3 +49,55 @@ export function singleton<T, D extends new (...args: any) => T>(className: D) {
     }
   } as unknown as D;
 }
+
+export const hasDiff = (
+  left: any,
+  right: any,
+  compare: (key: string, leftValue: any, rightValue: any) => boolean = (
+    _k,
+    _lv,
+    _rv
+  ) => true
+): boolean => {
+  if ((!left && right) || (left && !right)) {
+    return true;
+  }
+
+  if (!left && !right) {
+    return !Object.is(left, right);
+  }
+
+  const leftType = typeof left;
+  const rightType = typeof right;
+  const leftIsArray = Array.isArray(left);
+  const rightIsArray = Array.isArray(right);
+
+  if (leftType !== rightType) {
+    return true;
+  }
+
+  if ((leftIsArray && !rightIsArray) || (!leftIsArray && rightIsArray)) {
+    return true;
+  }
+
+  if (leftIsArray && rightIsArray) {
+    if (left.length !== right.length) {
+      return true;
+    }
+    return left.some((e, i) => hasDiff(e, right[i], compare));
+  }
+
+  if (leftType === "object") {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    if (leftKeys.length !== rightKeys.length) {
+      return true;
+    }
+    return Object.keys(left).some(
+      (k) =>
+        compare(k, left[k], right[k]) && hasDiff(left[k], right[k], compare)
+    );
+  }
+
+  return !Object.is(left, right);
+};

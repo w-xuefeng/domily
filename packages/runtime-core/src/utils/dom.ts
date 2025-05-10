@@ -224,14 +224,35 @@ export function rv(children: DOMilyChildren = []) {
   return new RV(children);
 }
 
-export function c(data: string) {
+export function c(data?: string | number | undefined) {
+  if (typeof data === "undefined") {
+    data = "";
+  }
+  if (typeof data === "number") {
+    data = String(data);
+  }
   const comment = document.createComment(data);
   return comment;
 }
 
-export function txt(data: string) {
+export function txt(data?: string | number | undefined) {
+  if (typeof data === "undefined") {
+    data = "";
+  }
+  if (typeof data === "number") {
+    data = String(data);
+  }
   const comment = document.createTextNode(data);
   return comment;
+}
+
+export function cssObjectToText(css?: string | Partial<CSSStyleDeclaration>) {
+  if (typeof css === "string" || !css) {
+    return css;
+  }
+  return Object.entries(css)
+    .map(([sk, sv]) => `${camelToKebab(sk)}:${sv}`)
+    .join(";");
 }
 
 export function internalCreateElement<P>(
@@ -284,9 +305,7 @@ export function internalCreateElement<P>(
         });
       } else if (k === "style") {
         if (typeof v === "object" && v !== null) {
-          const cssText = Object.entries(v)
-            .map(([sk, sv]) => `${camelToKebab(sk)}:${sv}`)
-            .join(";");
+          const cssText = cssObjectToText(v);
           Reflect.set(container.style, "cssText", cssText);
         } else if (typeof v === "string") {
           Reflect.set(container.style, "cssText", v);
@@ -349,8 +368,8 @@ export function handleHiddenStyle(
   return hidden
     ? typeof style === "string"
       ? `${style}${style.endsWith(";") ? "" : ";"}display:none!important;`
-      : { ...style, display: "none!important" }
-    : style;
+      : cssObjectToText({ ...style, display: "none!important" })
+    : cssObjectToText(style);
 }
 
 export function handleCSS(
@@ -463,21 +482,15 @@ export function replaceDOM(
   throw new Error("[DOMily] replaceDOM is not supported in this environment");
 }
 
-export function mountable<
-  K extends string,
-  T extends {
-    [k in K]: HTMLElement | Node | null;
-  } & {
-    schema: DomilyRenderSchema<any, any, any>;
-  }
->(data: T, domKey = "dom" as K) {
-  return {
-    ...data,
+export function mountable(schema: DomilyRenderSchema<any, any, any>) {
+  const result = {
+    schema,
     unmount: noop,
-    mount(
+    mount: (
       parent: HTMLElement | Document | ShadowRoot | string = document.body
-    ) {
-      this.unmount = domMountToParent(this[domKey], parent);
+    ) => {
+      result.unmount = domMountToParent(schema.render(), parent);
     },
   };
+  return result;
 }

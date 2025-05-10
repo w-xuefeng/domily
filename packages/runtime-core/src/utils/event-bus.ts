@@ -1,15 +1,4 @@
-const EVENT_MAP_KEY = "__$DOMilyGlobalEventMap";
-
-Reflect.set(
-  globalThis,
-  EVENT_MAP_KEY,
-  Reflect.get(globalThis, EVENT_MAP_KEY) || new Map<string, Function[]>()
-);
-
-const globalEventMap = Reflect.get(globalThis, EVENT_MAP_KEY) as Map<
-  string,
-  Function[]
->;
+const globalEventMap = new Map<string, Function[]>();
 
 export class EventBus {
   static on<T = undefined>(eventName: string, callback: (e: T) => void) {
@@ -65,4 +54,5 @@ export class EventBus {
 
 export const EVENTS = {
   APP_MOUNTED: "app-mounted",
+  __INTERNAL_UPDATE: "__internal_update",
 };

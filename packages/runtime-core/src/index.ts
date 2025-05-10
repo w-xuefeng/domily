@@ -7,5 +7,6 @@ export * from "./core/render";
 export * from "./core/component";
 export * from "./domily";
 export * from "./core/app";
+export * from "./core/reactive";
 
 export { default as DomilyAppSchema } from "./core/app";

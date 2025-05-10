@@ -10,6 +10,7 @@ import type {
   IDomilyCustomElementOptions,
   IDomilyRenderOptions,
   TDomilyRenderProperties,
+  WithFuncType,
 } from "./type/types";
 import {
   c,
@@ -19,14 +20,21 @@ import {
   handleHiddenStyle,
   internalCreateElement,
   mountable,
+  replaceDOM,
   rv,
   txt,
 } from "../../utils/dom";
-import { merge } from "../../utils/obj";
+import { hasDiff, merge } from "../../utils/obj";
 import { isFunction } from "../../utils/is";
 import { domilyChildToDOM } from "./shared/parse";
 import DomilyFragment from "./custom-elements/fragment";
 import DomilyRouterView from "./custom-elements/router-view";
+import { EventBus, EVENTS } from "../../utils/event-bus";
+import {
+  handleFunTypeEffect,
+  handleWithFunType,
+  watchEffect,
+} from "../reactive/handle-effect";
 
 export default class DomilyRenderSchema<
   CustomElementMap = {},
@@ -38,26 +46,26 @@ export default class DomilyRenderSchema<
    * base info
    */
   tag: K;
-  id?: string;
-  className?: string;
+  id?: WithFuncType<string>;
+  className?: WithFuncType<string>;
 
   /**
    * style info
    */
-  css?: string | DOMilyCascadingStyleSheets;
-  style?: string | Partial<CSSStyleDeclaration>;
+  css?: WithFuncType<string | DOMilyCascadingStyleSheets>;
+  style?: WithFuncType<string | Partial<CSSStyleDeclaration>>;
 
   /**
    * properties and attributes
    */
-  props?: DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>;
-  attrs?: DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>;
+  props?: WithFuncType<DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>>;
+  attrs?: WithFuncType<DOMilyRenderOptionsPropsOrAttrs<CustomElementMap, K>>;
 
   /**
    * content and children
    */
-  text?: string | number;
-  html?: string;
+  text?: WithFuncType<string | number>;
+  html?: WithFuncType<string>;
   children?: DOMilyChildren;
 
   /**
@@ -68,8 +76,8 @@ export default class DomilyRenderSchema<
   /**
    * display controller
    */
-  domIf?: boolean | (() => boolean);
-  domShow?: boolean | (() => boolean);
+  domIf?: WithFuncType<boolean>;
+  domShow?: WithFuncType<boolean>;
 
   /**
    * list-loop
@@ -88,6 +96,11 @@ export default class DomilyRenderSchema<
     useShadowDOM: false,
     shadowDOMMode: "open",
   };
+
+  /**
+   * for reactive update
+   */
+  __dom: HTMLElement | Node | null = null;
 
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
@@ -277,7 +290,7 @@ export default class DomilyRenderSchema<
     return new CEC(dom);
   }
 
-  domAOPTask(dom: HTMLElement | Node) {
+  domInterrupter(dom: HTMLElement | Node) {
     return this.handleCustomElement(dom);
   }
 
@@ -302,88 +315,224 @@ export default class DomilyRenderSchema<
     /**
      * handle dom-if
      */
-    if (typeof this.domIf === "function" && !this.domIf()) {
-      return c("dom-if");
-    }
-
-    if (typeof this.domIf === "boolean" && !this.domIf) {
-      return c("dom-if");
-    }
+    watchEffect(this.domIf, (nextDomIf) => {
+      if (!nextDomIf) {
+        this.__dom = replaceDOM(this.__dom, c("dom-if"));
+      } else {
+        this.domIf = true;
+        this.__dom = replaceDOM(this.__dom, this.render());
+      }
+    });
 
     /**
      * handle dom-show
      */
-    const hidden =
-      typeof this.domShow === "function"
-        ? !this.domShow()
-        : typeof this.domShow === "boolean"
-        ? !this.domShow
-        : false;
+    const previousDomShow = watchEffect(this.domShow, (nextDomShow) => {
+      if (this.__dom && "style" in this.__dom) {
+        this.__dom.style.cssText = handleHiddenStyle(
+          this.__dom.style.cssText,
+          !nextDomShow
+        ) as string;
+      }
+    });
 
     /**
      * Text Node
      */
     if (this.tag === "text") {
-      return hidden ? txt("") : txt(String(this.text ?? ""));
+      const previousText = watchEffect(this.text, (text) => {
+        this.__dom = replaceDOM(
+          this.__dom,
+          txt(!previousDomShow.value ? void 0 : text)
+        );
+      });
+      this.__dom = txt(!previousDomShow.value ? void 0 : previousText.value);
+      return this.__dom;
     }
 
     /**
      * Comment Node
      */
     if (this.tag === "comment") {
-      return c(String(this.text ?? "domily-comment"));
+      const previousText = watchEffect(this.text, (text) => {
+        this.__dom = replaceDOM(
+          this.__dom,
+          c(!previousDomShow.value ? '"domily-comment-hidden"' : text)
+        );
+      });
+      this.__dom = c(previousText.value ?? "domily-comment");
+      return this.__dom;
     }
 
-    const css = handleCSS(this.css);
-    const style = handleHiddenStyle(this.style, hidden);
+    let previousCSS = handleCSS(handleWithFunType(this.css));
+    handleFunTypeEffect(this.css, (css) => {
+      const nextStyle = handleCSS(css);
+      if (
+        previousCSS &&
+        nextStyle &&
+        previousCSS.innerText === nextStyle.innerText
+      ) {
+        return;
+      }
+      previousCSS = replaceDOM(
+        previousCSS,
+        nextStyle
+      ) as HTMLStyleElement | null;
+    });
+
+    let previousStyle = handleHiddenStyle(
+      handleWithFunType(this.style),
+      !previousDomShow
+    );
+    handleFunTypeEffect(this.style, (style) => {
+      const nextStyle = handleHiddenStyle(style, !previousDomShow);
+      if (previousStyle === nextStyle) {
+        return;
+      }
+      if (this.__dom && "style" in this.__dom) {
+        this.__dom.style.cssText =
+          typeof nextStyle === "string" ? nextStyle : "";
+      }
+      previousStyle = nextStyle;
+    });
+
     const children = (this.children
       ?.map((child) => domilyChildToDOM(child))
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
 
-    if (css) {
-      children.unshift(css);
+    if (previousCSS) {
+      children.unshift(previousCSS);
     }
 
     const props = {
-      ...this.props,
-      ...(this.id ? { id: this.id } : {}),
-      ...(this.className ? { className: this.className } : {}),
-      ...(this.html
-        ? { innerHTML: this.html }
-        : this.text
-        ? { innerText: this.text }
+      ...(() => {
+        let previousProps = handleWithFunType(this.props);
+        handleFunTypeEffect(this.props, (nextProps) => {
+          if (!hasDiff(previousProps, nextProps)) {
+            return;
+          }
+          if (!this.__dom || !nextProps) {
+            return;
+          }
+          Object.keys(nextProps).forEach((k) => {
+            Reflect.set(this.__dom as HTMLElement, k, nextProps[k]);
+          });
+          previousProps = nextProps;
+        });
+        return previousProps;
+      })(),
+      ...(this.id
+        ? {
+            id: (() => {
+              let previousId = handleWithFunType(this.id);
+              handleFunTypeEffect(this.id, (id) => {
+                if (id === previousId) {
+                  return;
+                }
+                if (this.__dom) {
+                  Reflect.set(this.__dom as HTMLElement, "id", id);
+                }
+                previousId = id;
+              });
+              return previousId;
+            })(),
+          }
         : {}),
-      attrs: this.attrs,
-      style,
+      ...(this.className
+        ? {
+            className: (() => {
+              let previousClassName = handleWithFunType(this.className);
+              handleFunTypeEffect(this.className, (className) => {
+                if (className === previousClassName) {
+                  return;
+                }
+                if (this.__dom) {
+                  Reflect.set(
+                    this.__dom as HTMLElement,
+                    "className",
+                    className
+                  );
+                }
+                previousClassName = className;
+              });
+              return previousClassName;
+            })(),
+          }
+        : {}),
+      ...(this.html
+        ? {
+            innerHTML: (() => {
+              let previousHTML = handleWithFunType(this.html);
+              handleFunTypeEffect(this.html, (html) => {
+                if (html === previousHTML) {
+                  return;
+                }
+                if (this.__dom) {
+                  Reflect.set(this.__dom as HTMLElement, "innerHTML", html);
+                }
+                previousHTML = html;
+              });
+              return previousHTML;
+            })(),
+          }
+        : this.text
+        ? {
+            innerText: (() => {
+              let previousText = handleWithFunType(this.text);
+              handleFunTypeEffect(this.text, (text) => {
+                if (text === previousText) {
+                  return;
+                }
+                if (this.__dom) {
+                  Reflect.set(this.__dom as HTMLElement, "innerText", text);
+                }
+                previousText = text;
+              });
+              return previousText;
+            })(),
+          }
+        : {}),
+      attrs: (() => {
+        let previousAttrs = handleWithFunType(this.attrs);
+        handleFunTypeEffect(this.attrs, (nextAttrs) => {
+          if (!hasDiff(previousAttrs, nextAttrs)) {
+            return;
+          }
+          if (!this.__dom || !nextAttrs) {
+            return;
+          }
+          Object.keys(nextAttrs).forEach((k) => {
+            (this.__dom as HTMLElement).setAttribute(k, nextAttrs[k]);
+          });
+          previousAttrs = nextAttrs;
+        });
+        return previousAttrs;
+      })(),
+      style: previousStyle,
       on: this.on,
     } as unknown as TDomilyRenderProperties<CustomElementMap, K>;
 
     if ([DomilyFragment.name, "fragment"].includes(this.tag as string)) {
-      return internalCreateElement(() => f(children), props);
+      this.__dom = this.domInterrupter(
+        internalCreateElement(() => f(children), props)
+      );
+    } else if (this.tag === DomilyRouterView.name) {
+      this.__dom = this.domInterrupter(
+        internalCreateElement(() => rv(children), props)
+      );
+    } else {
+      this.__dom = this.domInterrupter(
+        h<CustomElementMap, K>(this.tag, props, children) as HTMLElement
+      );
     }
-
-    if (this.tag === DomilyRouterView.name) {
-      return internalCreateElement(() => rv(children), props);
-    }
-
-    return this.domAOPTask(
-      h<CustomElementMap, K>(this.tag, props, children) as HTMLElement
-    );
+    return this.__dom;
   }
 }
 
 export function render<K extends DOMilyTags, ListData = any>(
   schema: IDomilyRenderOptions<{}, K, ListData>
 ) {
-  const domilySchema = DomilyRenderSchema.create<{}, K, ListData>(schema);
-  const returnValue = mountable(
-    {
-      dom: domilySchema.render(),
-      schema: domilySchema,
-    },
-    "dom"
-  );
-  return returnValue;
+  return mountable(DomilyRenderSchema.create(schema));
 }
 
 export function registerElement<ThisArgs extends object, T extends string>(
@@ -398,4 +547,22 @@ export function registerElement<ThisArgs extends object, T extends string>(
     return render({ ...schema, tag } as any);
   });
   return thisArgs;
+}
+
+if (!EventBus.has(EVENTS.__INTERNAL_UPDATE)) {
+  EventBus.on(
+    EVENTS.__INTERNAL_UPDATE,
+    ({
+      nextSchema,
+      originalSchema,
+    }: {
+      nextSchema: DomilyRenderSchema<any, any, any>;
+      originalSchema: DomilyRenderSchema<any, any, any>;
+    }) => {
+      originalSchema.__dom = replaceDOM(
+        originalSchema.__dom,
+        nextSchema.render()
+      );
+    }
+  );
 }

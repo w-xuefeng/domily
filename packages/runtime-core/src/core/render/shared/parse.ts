@@ -1,3 +1,4 @@
+import { effect } from "../../reactive";
 import { mountable, txt } from "../../../utils/dom";
 import { isFunction, isObject } from "../../../utils/is";
 import { merge } from "../../../utils/obj";
@@ -9,6 +10,7 @@ import type {
   DOMilyMountableRender,
   IDomilyRenderOptions,
 } from "../type/types";
+import { EventBus, EVENTS } from "../../../utils/event-bus";
 
 /**
  * obj is DomilyRenderSchema
@@ -56,7 +58,6 @@ export function isDOMilyMountableRender(
 ): obj is DOMilyMountableRender<any, any> {
   return (
     isObject(obj) &&
-    "dom" in obj &&
     "schema" in obj &&
     isObject(obj.schema) &&
     isDomilyRenderSchema(obj.schema) &&
@@ -90,7 +91,16 @@ export function domilyChildToDomilyRenderSchema(
   }
 
   if (isFunction(input)) {
-    return domilyChildToDomilyRenderSchema(input());
+    let originalSchema = domilyChildToDomilyRenderSchema(input());
+    effect(() => {
+      const nextSchema = domilyChildToDomilyRenderSchema(input());
+      EventBus.emit(EVENTS.__INTERNAL_UPDATE, {
+        nextSchema,
+        originalSchema,
+      });
+      originalSchema = nextSchema;
+    });
+    return originalSchema;
   }
 
   if (isDomilyRenderSchema(input)) {
@@ -127,7 +137,7 @@ export function domilyChildToDomilyRenderSchema(
 
 export function domilyChildToDOMilyMountableRender(
   input?: DOMilyChild | (() => DOMilyChild)
-): DOMilyMountableRender<any, any> | null {
+): DOMilyMountableRender<any, any, any> | null {
   if (!input) {
     return null;
   }
@@ -142,30 +152,38 @@ export function domilyChildToDOMilyMountableRender(
     return null;
   }
 
-  return mountable(
-    {
-      schema,
-      dom: schema.render(),
-    },
-    "dom"
-  );
+  return mountable(schema);
 }
 
 export function domilyChildToDOM(
-  child: DOMilyChild | DOMilyChildDOM
+  child: DOMilyChild | DOMilyChildDOM | (() => DOMilyChild | DOMilyChildDOM)
 ): HTMLElement | Node | null {
   if (!child) {
     return null;
   }
+
   if (child instanceof HTMLElement || child instanceof Node) {
     return child;
   }
+
   if (typeof child === "string") {
     return txt(child);
   }
-  const childSchema = domilyChildToDomilyRenderSchema(child);
+
+  if (isFunction(child)) {
+    const el = child();
+    if (el instanceof HTMLElement || el instanceof Node) {
+      return el;
+    }
+  }
+
+  const childSchema = domilyChildToDomilyRenderSchema(
+    child as DOMilyChild | (() => DOMilyChild)
+  );
+
   if (!childSchema) {
     return null;
   }
+
   return childSchema.render();
 }

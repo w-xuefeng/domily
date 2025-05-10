@@ -41,6 +41,7 @@
       "name": "@domily/runtime-core",
       "version": "1.0.0",
       "dependencies": {
+        "alien-signals": "^2.0.4",
         "path-to-regexp": "^8.2.0",
       },
       "devDependencies": {
@@ -285,6 +286,8 @@
     "@valibot/to-json-schema": ["@valibot/to-json-schema@1.0.0", "", { "peerDependencies": { "valibot": "^1.0.0" } }, "sha512-/9crJgPptVsGCL6X+JPDQyaJwkalSZ/52WuF8DiRUxJgcmpNdzYRfZ+gqMEP8W3CTVfuMWPqqvIgfwJ97f9Etw=="],
 
     "acorn": ["acorn@8.14.1", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg=="],
+
+    "alien-signals": ["alien-signals@2.0.4", "", {}, "sha512-3QsszrrJN/VtQxyQcc0I+Mn758aGB5WCBCm55x9twfRimD9fWsQ/3iyVmUJwCdr1ovnmT7wRX1sq4j8sQiTixA=="],
 
     "ansi-regex": ["ansi-regex@6.1.0", "", {}, "sha512-7HSX4QQb4CspciLpVFwyRe79O3xsIZDDLER21kERQ71oaPodF8jL725AgJMFAYbooIqolJoRLuM81SpeUkpkvA=="],
 
