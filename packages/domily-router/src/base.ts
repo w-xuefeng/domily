@@ -248,7 +248,7 @@ export default abstract class DomilyRouterBase {
     routerViewHTMLElement: HTMLElement
   ) {
     routerViewHTMLElement.childNodes.forEach((e) => e.remove());
-    routerViewHTMLElement.setAttribute("path", item.path);
+    routerViewHTMLElement.setAttribute("path", item.fullPath || item.path);
     return await item.render(routerViewHTMLElement);
   }
 
@@ -256,36 +256,57 @@ export default abstract class DomilyRouterBase {
     if (!this.root || !matched) {
       return false;
     }
-    const rootRouterView = this.root.querySelector<HTMLElement>(
-      DomilyRouterView.name
+    function getLastRouterView(
+      parent: HTMLElement | Document | ShadowRoot,
+      path: string
+    ): HTMLElement | null {
+      const routerView = parent.querySelector<HTMLElement>(
+        `${DomilyRouterView.name}[path="${path}"]`
+      );
+      if (routerView) {
+        return routerView;
+      }
+      const rootRouterViews = Array.from(
+        parent.querySelectorAll<HTMLElement>(DomilyRouterView.name)
+      );
+      const lastRouterView = rootRouterViews.at(-1);
+      if (!lastRouterView) {
+        return null;
+      }
+      return getLastRouterView(lastRouterView, path) || lastRouterView;
+    }
+    const rootRouterView = getLastRouterView(
+      this.root,
+      matched.fullPath || matched.path
     );
     if (!rootRouterView) {
       return false;
     }
-    const parents: IMatchedRoute[] = [matched];
-    const getParents = (matched: IMatchedRoute) => {
-      if (matched.parent) {
-        parents.unshift(matched.parent);
-        getParents(matched.parent);
-      }
-    };
-    getParents(matched);
-    let lastResult: DOMilyMountableRender<any, any> | null = null;
-    for (let i = 0; i < parents.length; i++) {
-      if (i === 0) {
-        lastResult = await this.prepareRouterView(parents[i]!, rootRouterView);
-      } else if (
-        lastResult?.schema.__dom &&
-        "querySelector" in lastResult.schema.__dom
-      ) {
-        const el = (
-          lastResult.schema.__dom as HTMLElement
-        ).querySelector<HTMLElement>(DomilyRouterView.name);
-        if (el) {
-          lastResult = await this.prepareRouterView(parents[i]!, el);
-        }
-      }
-    }
+    this.prepareRouterView(matched, rootRouterView);
+    // const parents: IMatchedRoute[] = [matched];
+    // const getParents = (matched: IMatchedRoute) => {
+    //   if (matched.parent) {
+    //     parents.unshift(matched.parent);
+    //     getParents(matched.parent);
+    //   }
+    // };
+    // getParents(matched);
+    // let lastResult: DOMilyMountableRender<any, any> | null = null;
+    // for (let i = 0; i < parents.length; i++) {
+    //   if (i === 0) {
+    //     lastResult = await this.prepareRouterView(parents[i]!, rootRouterView);
+    //   } else if (
+    //     lastResult?.schema.__dom &&
+    //     "querySelector" in lastResult.schema.__dom
+    //   ) {
+    //     const el = (
+    //       lastResult.schema.__dom as HTMLElement
+    //     ).querySelector<HTMLElement>(DomilyRouterView.name);
+    //     if (el) {
+    //       lastResult = await this.prepareRouterView(parents[i]!, el);
+    //     }
+    //   }
+    // }
     return true;
   }
 
@@ -352,7 +373,7 @@ export default abstract class DomilyRouterBase {
         if (ISUtils.isFunction(callbacks?.afterMatched)) {
           callbacks.afterMatched(this.currentRoute);
         }
-        from?.comp.unmount();
+        // from?.comp.unmount();
         this.deepRender(this.currentRoute)
           .then((rendered) => {
             if (ISUtils.isFunction(callbacks?.afterRendered)) {
