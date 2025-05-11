@@ -8,6 +8,8 @@ import type {
 } from "../core/render/type/types";
 import DomilyFragment from "../core/render/custom-elements/fragment";
 import DomilyRouterView from "../core/render/custom-elements/router-view";
+import { handleWithFunType } from "../core/reactive/handle-effect";
+import { effect } from "alien-signals";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
@@ -272,7 +274,15 @@ export function internalCreateElement<P>(
     Object.entries(properties).forEach(([k, v]) => {
       if (k === "attrs" && typeof v === "object" && v !== null) {
         Object.entries(v as Record<string, string>).forEach(([ak, av]) => {
-          container.setAttribute(ak, av);
+          container.setAttribute(ak, handleWithFunType(av));
+          effect(() => {
+            const next = handleWithFunType(av);
+            if (typeof next === "undefined") {
+              container.removeAttribute(ak);
+            } else {
+              container.setAttribute(ak, next);
+            }
+          });
         });
       } else if (k === "on" && typeof v === "object" && v !== null) {
         Object.entries(
@@ -313,7 +323,10 @@ export function internalCreateElement<P>(
           Reflect.set(container.style, "cssText", v);
         }
       } else if (k !== "attrs" && k !== "on" && k !== "style") {
-        Reflect.set(container, k, v);
+        Reflect.set(container, k, handleWithFunType(v));
+        effect(() => {
+          Reflect.set(container, k, handleWithFunType(v));
+        });
       }
     });
   }
