@@ -6,7 +6,7 @@
     {
       "tag": "img",
       "className": "logo",
-      "domIf": "@logoIf",
+      "domShow": "@logoIf",
       "props": {
         "src": ":Logo"
       }

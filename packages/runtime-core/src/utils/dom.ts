@@ -246,9 +246,11 @@ export function txt(data?: string | number | undefined) {
   return comment;
 }
 
-export function cssObjectToText(css?: string | Partial<CSSStyleDeclaration>) {
+export function cssObjectToText(
+  css?: string | Partial<CSSStyleDeclaration>
+): string | undefined {
   if (typeof css === "string" || !css) {
-    return css;
+    return css as string | undefined;
   }
   return Object.entries(css)
     .map(([sk, sv]) => `${camelToKebab(sk)}:${sv}`)
@@ -369,7 +371,7 @@ export function handleHiddenStyle(
     ? typeof style === "string"
       ? `${style}${style.endsWith(";") ? "" : ";"}display:none!important;`
       : cssObjectToText({ ...style, display: "none!important" })
-    : cssObjectToText(style);
+    : cssObjectToText(style)?.replace(/display:\s?none\s?!important;?/, "");
 }
 
 export function handleCSS(
