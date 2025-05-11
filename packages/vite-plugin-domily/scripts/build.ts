@@ -28,7 +28,16 @@ const build = async () => {
       Bun.build({
         entrypoints: [path.resolve(import.meta.dir, "..", "index.ts")],
         outdir,
-        minify: false,
+        minify: true,
+        external: [
+          "@swc/core",
+          "less",
+          "sass",
+          "vite",
+          "vite-plugin-inspect",
+          "@domily/runtime-core",
+          "@domily/router",
+        ],
         ...e,
       })
     )
