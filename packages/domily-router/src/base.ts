@@ -17,6 +17,17 @@ import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
 
 const { EventBus, EVENTS } = EB;
 
+const GroupKey = {
+  count: 0,
+  increase: (text: string) => {
+    GroupKey.count++;
+    return `${text}-${GroupKey.count}`;
+  },
+};
+
+const getGroupKey = (route?: IMatchedRoute | null) =>
+  GroupKey.increase(route?.name || route?.path || "GROUP");
+
 export interface ICreateRouterOptions {
   base?: string;
   routes?: IDomilyPageSchema<any, any>[];
@@ -32,6 +43,7 @@ export interface IRouterOptions {
 
 export interface IMatchedPage extends IMatchedRoute {
   comp: DOMilyMountableRender<any, any>;
+  groupKey?: string;
 }
 
 export interface IRouterBeforeEach {
@@ -54,7 +66,8 @@ export default abstract class DomilyRouterBase {
   /**
    * the store for the global page router history
    */
-  GLobalPageRouterHistoryStoreArray: IMatchedPage[] = [];
+  GLobalPageRouterHistoryStoreMap: Map<string, IMatchedPage[]> = new Map();
+  GLobalPageRouterHistoryStoreMapLastKey?: string;
   /**
    * the queue for the global page rendering
    */
@@ -173,8 +186,17 @@ export default abstract class DomilyRouterBase {
      * enqueue page-render-promise when page mounted
      */
     EventBus.on<IMatchedPage>(ROUTER_EVENTS.PAGE_MOUNTED, (e) => {
-      this.GLobalPageRouterHistoryStoreArray.push(e);
+      if (!e.groupKey) {
+        e.groupKey = getGroupKey(e);
+      }
+      const item = this.GLobalPageRouterHistoryStoreMap.get(e.groupKey);
+      if (!item) {
+        this.GLobalPageRouterHistoryStoreMap.set(e.groupKey, [e]);
+      } else {
+        this.GLobalPageRouterHistoryStoreMap.set(e.groupKey, [...item, e]);
+      }
     });
+
     this.initRouter();
     EventBus.on<HTMLElement | Document | ShadowRoot | undefined | null>(
       EVENTS.APP_MOUNTED,
@@ -244,67 +266,67 @@ export default abstract class DomilyRouterBase {
   }
 
   async prepareRouterView(
-    item: IMatchedRoute,
-    routerViewHTMLElement: HTMLElement
+    item: IMatchedRoute | IMatchedPage,
+    routerViewHTMLElement: HTMLElement,
+    groupKey?: string
   ) {
     routerViewHTMLElement.childNodes.forEach((e) => e.remove());
     routerViewHTMLElement.setAttribute("path", item.path);
-    return await item.render(routerViewHTMLElement);
+    return await item.render(routerViewHTMLElement, groupKey);
   }
 
-  async deepRender(matched?: IMatchedRoute | null) {
+  async deepRender(matched?: IMatchedRoute | null, groupKey?: string) {
     if (!this.root || !matched) {
       return false;
     }
-    function getLastRouterView(
-      parent: HTMLElement | Document | ShadowRoot,
-      path: string
-    ): HTMLElement | null {
-      const routerView = parent.querySelector<HTMLElement>(
-        `${DomilyRouterView.name}[path="${path}"]`
-      );
-      if (routerView) {
-        return routerView;
-      }
-      const rootRouterViews = Array.from(
-        parent.querySelectorAll<HTMLElement>(DomilyRouterView.name)
-      );
-      const lastRouterView = rootRouterViews.at(-1);
-      if (!lastRouterView) {
-        return null;
-      }
-      return getLastRouterView(lastRouterView, path) || lastRouterView;
-    }
-    const rootRouterView = getLastRouterView(this.root, matched.path);
+    const rootRouterView = this.root.querySelector<HTMLElement>(
+      DomilyRouterView.name
+    );
     if (!rootRouterView) {
       return false;
     }
-    this.prepareRouterView(matched, rootRouterView);
-    // const parents: IMatchedRoute[] = [matched];
-    // const getParents = (matched: IMatchedRoute) => {
-    //   if (matched.parent) {
-    //     parents.unshift(matched.parent);
-    //     getParents(matched.parent);
-    //   }
-    // };
-    // getParents(matched);
-    // let lastResult: DOMilyMountableRender<any, any> | null = null;
-    // for (let i = 0; i < parents.length; i++) {
-    //   if (i === 0) {
-    //     lastResult = await this.prepareRouterView(parents[i]!, rootRouterView);
-    //   } else if (
-    //     lastResult?.schema.__dom &&
-    //     "querySelector" in lastResult.schema.__dom
-    //   ) {
-    //     const el = (
-    //       lastResult.schema.__dom as HTMLElement
-    //     ).querySelector<HTMLElement>(DomilyRouterView.name);
-    //     if (el) {
-    //       lastResult = await this.prepareRouterView(parents[i]!, el);
-    //     }
-    //   }
-    // }
+    const parents: IMatchedRoute[] = [matched];
+    const getParents = (matched: IMatchedRoute) => {
+      if (matched.parent) {
+        parents.unshift(matched.parent);
+        getParents(matched.parent);
+      }
+    };
+    getParents(matched);
+    let lastResult: DOMilyMountableRender<any, any> | null = null;
+    for (let i = 0; i < parents.length; i++) {
+      if (i === 0) {
+        lastResult = await this.prepareRouterView(
+          parents[i]!,
+          rootRouterView,
+          groupKey
+        );
+      } else if (
+        lastResult?.schema.__dom &&
+        "querySelector" in lastResult.schema.__dom
+      ) {
+        const el = (
+          lastResult.schema.__dom as HTMLElement
+        ).querySelector<HTMLElement>(DomilyRouterView.name);
+        if (el) {
+          lastResult = await this.prepareRouterView(parents[i]!, el, groupKey);
+        }
+      }
+    }
     return true;
+  }
+
+  unmountLastRouterViewGroup() {
+    if (!this.GLobalPageRouterHistoryStoreMapLastKey) {
+      return;
+    }
+    const lastItem = this.GLobalPageRouterHistoryStoreMap.get(
+      this.GLobalPageRouterHistoryStoreMapLastKey
+    );
+    if (!lastItem?.length) {
+      return;
+    }
+    lastItem.forEach((e) => e.comp.unmount());
   }
 
   match(pathname?: string): IMatchedRoute | null {
@@ -338,7 +360,11 @@ export default abstract class DomilyRouterBase {
   ) {
     const renderPromise = () =>
       new Promise<void>((resolve) => {
-        const from = this.GLobalPageRouterHistoryStoreArray.at(-1);
+        const from = this.GLobalPageRouterHistoryStoreMapLastKey
+          ? this.GLobalPageRouterHistoryStoreMap.get(
+              this.GLobalPageRouterHistoryStoreMapLastKey
+            )?.at(-1)
+          : void 0;
         const matched = this.match(pathname);
         if (Array.isArray(this.beforeEach) && this.beforeEach.length) {
           for (const before of this.beforeEach) {
@@ -370,8 +396,14 @@ export default abstract class DomilyRouterBase {
         if (ISUtils.isFunction(callbacks?.afterMatched)) {
           callbacks.afterMatched(this.currentRoute);
         }
-        // from?.comp.unmount();
-        this.deepRender(this.currentRoute)
+        this.unmountLastRouterViewGroup();
+        this.GLobalPageRouterHistoryStoreMapLastKey = getGroupKey(
+          this.currentRoute
+        );
+        this.deepRender(
+          this.currentRoute,
+          this.GLobalPageRouterHistoryStoreMapLastKey
+        )
           .then((rendered) => {
             if (ISUtils.isFunction(callbacks?.afterRendered)) {
               callbacks.afterRendered(rendered, this.currentRoute);
@@ -449,6 +481,9 @@ export default abstract class DomilyRouterBase {
     if (!href) {
       return;
     }
+    if (href === location.href) {
+      return;
+    }
     history.pushState(this.obtainHistoryState(options), "", href);
     this.matchPage();
   }
@@ -458,6 +493,9 @@ export default abstract class DomilyRouterBase {
     }
     const { href } = this.resolve(options) || {};
     if (!href) {
+      return;
+    }
+    if (href === location.href) {
       return;
     }
     history.replaceState(this.obtainHistoryState(options), "", href);

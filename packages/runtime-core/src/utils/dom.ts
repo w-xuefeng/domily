@@ -485,11 +485,15 @@ export function replaceDOM(
 export function mountable(schema: DomilyRenderSchema<any, any, any>) {
   const result = {
     schema,
-    unmount: noop,
+    unmount: () => {
+      if (schema.__dom) {
+        removeDOM(schema.__dom);
+      }
+    },
     mount: (
       parent: HTMLElement | Document | ShadowRoot | string = document.body
     ) => {
-      result.unmount = domMountToParent(schema.render(), parent);
+      domMountToParent(schema.render(), parent);
     },
   };
   return result;

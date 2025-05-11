@@ -1,6 +1,7 @@
 import {
   EB,
   ISUtils,
+  DOMUtils,
   parseComponent,
   type DOMilyComponent,
   type AsyncDOMilyComponentModule,
@@ -42,6 +43,7 @@ export default class DomilyPageSchema<
   props?: Props;
   private functionComponent: DOMilyComponent | null = null;
   private asyncComponentLoading = false;
+  private mountedComponent: DOMilyMountableRender<any, any, any> | null = null;
 
   constructor(schema: IDomilyPageSchema<PageMeta, Props>) {
     this.name = schema.name;
@@ -66,32 +68,42 @@ export default class DomilyPageSchema<
 
   #toView(
     component: DOMilyComponent,
-    el: HTMLElement | Document | ShadowRoot | string
+    el: HTMLElement | Document | ShadowRoot | string,
+    groupKey?: string
   ) {
-    const comp = parseComponent(
-      Object.assign(
-        {
-          namespace: this.namespace,
-        },
-        this.props
-      ),
-      component,
-      true
-    );
-    if (!comp) {
-      return null;
+    if (this.mountedComponent?.schema?.__dom) {
+      DOMUtils.domMountToParent(this.mountedComponent.schema.__dom, el);
+    } else {
+      const comp = parseComponent(
+        Object.assign(
+          {
+            namespace: this.namespace,
+          },
+          this.props
+        ),
+        component,
+        true
+      );
+      if (!comp) {
+        return null;
+      }
+      comp.mount(el);
+      this.mountedComponent = comp;
     }
-    comp.mount(el);
     EventBus.emit<IMatchedPage>(
       ROUTER_EVENTS.PAGE_MOUNTED,
-      Object.assign(this, {
-        comp,
-      })
+      Object.assign(
+        { ...this },
+        {
+          comp: this.mountedComponent,
+          groupKey,
+        }
+      )
     );
-    return comp;
+    return this.mountedComponent;
   }
 
-  render(el: HTMLElement | Document | ShadowRoot | string) {
+  render(el: HTMLElement | Document | ShadowRoot | string, groupKey?: string) {
     const { resolve, reject, promise } =
       Promise.withResolvers<DOMilyMountableRender<any, any> | null>();
 
@@ -104,9 +116,9 @@ export default class DomilyPageSchema<
       const router = app.globalProperties.$router;
       const { path, name } = this.redirect;
       if (path) {
-        resolve(router.routesPathFlatMap[path]?.render(el) || null);
+        resolve(router.routesPathFlatMap[path]?.render(el, groupKey) || null);
       } else if (name) {
-        resolve(router.routesNameFlatMap[name]?.render(el) || null);
+        resolve(router.routesNameFlatMap[name]?.render(el, groupKey) || null);
       } else {
         resolve(null);
       }
@@ -123,14 +135,14 @@ export default class DomilyPageSchema<
         .finally(() => {
           this.asyncComponentLoading = false;
           if (isFunction(this.functionComponent)) {
-            resolve(this.#toView(this.functionComponent, el));
+            resolve(this.#toView(this.functionComponent, el, groupKey));
           } else {
             resolve(null);
           }
         });
     } else if (isFunction(this.component)) {
       this.functionComponent = this.component;
-      resolve(this.#toView(this.functionComponent, el));
+      resolve(this.#toView(this.functionComponent, el, groupKey));
     } else {
       resolve(null);
     }
