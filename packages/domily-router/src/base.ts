@@ -248,7 +248,7 @@ export default abstract class DomilyRouterBase {
     routerViewHTMLElement: HTMLElement
   ) {
     routerViewHTMLElement.childNodes.forEach((e) => e.remove());
-    routerViewHTMLElement.setAttribute("path", item.fullPath || item.path);
+    routerViewHTMLElement.setAttribute("path", item.path);
     return await item.render(routerViewHTMLElement);
   }
 
@@ -275,10 +275,7 @@ export default abstract class DomilyRouterBase {
       }
       return getLastRouterView(lastRouterView, path) || lastRouterView;
     }
-    const rootRouterView = getLastRouterView(
-      this.root,
-      matched.fullPath || matched.path
-    );
+    const rootRouterView = getLastRouterView(this.root, matched.path);
     if (!rootRouterView) {
       return false;
     }
@@ -396,8 +393,6 @@ export default abstract class DomilyRouterBase {
                   after(this.currentRoute);
                 }
               }
-            } else {
-              this.currentRoute = matched;
             }
           })
           .finally(resolve);
