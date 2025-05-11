@@ -10,7 +10,6 @@ export default class DomilyFragment extends HTMLElement {
   }
   connectedCallback() {
     if (!this.initialChildren?.length) {
-      this.appendChild(document.createElement("slot"));
       return;
     }
     const documentFragment = document.createDocumentFragment();

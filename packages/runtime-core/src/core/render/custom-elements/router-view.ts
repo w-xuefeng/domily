@@ -10,7 +10,6 @@ export default class DomilyRouterView extends HTMLElement {
   }
   connectedCallback() {
     if (!this.initialChildren?.length) {
-      this.appendChild(document.createElement("slot"));
       return;
     }
     const documentFragment = document.createDocumentFragment();

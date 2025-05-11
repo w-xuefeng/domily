@@ -1,4 +1,9 @@
 declare module "*.md" {
-  import { IDomilyRenderOptions } from "@domily/runtime-core";
-  export default function (): IDomilyRenderOptions<any, any>;
+  import {
+    IDomilyRenderOptions,
+    type WithBaseProps,
+  } from "@domily/runtime-core";
+  export default function <T>(
+    props?: WithBaseProps<T>
+  ): IDomilyRenderOptions<any, any>;
 }
