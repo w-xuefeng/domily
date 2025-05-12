@@ -1,6 +1,6 @@
 {
   "name": "@domily/router",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json",
     "prepublishOnly": "bun run build",
-    "release": "npm version patch && npm publish"
+    "release": "npm version patch && npm publish --access public"
   },
   "exports": {
     ".": {
@@ -17,6 +17,9 @@
       "types": "./lib/types/index.d.ts"
     }
   },
+  "files": [
+    "lib"
+  ],
   "dependencies": {
     "path-to-regexp": "^8.2.0"
   },
@@ -25,6 +28,6 @@
   },
   "peerDependencies": {
     "typescript": "^5",
-    "@domily/runtime-core": "workspace:*"
+    "@domily/runtime-core": "^0.0.1"
   }
 }

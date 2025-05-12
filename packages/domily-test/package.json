@@ -11,8 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@domily/router": "workspace:*",
-    "@domily/runtime-core": "workspace:*"
+    "@domily/router": "latest",
+    "@domily/runtime-core": "latest"
   },
   "devDependencies": {
     "@types/less": "^3.0.8",
@@ -21,6 +21,6 @@
     "sass": "^1.87.0",
     "vite": "^6.3.3",
     "vite-plugin-inspect": "^11.0.1",
-    "vite-plugin-domily": "workspace:*"
+    "vite-plugin-domily": "latest"
   }
 }

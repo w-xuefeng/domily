@@ -1,6 +1,6 @@
 {
   "name": "@domily/runtime-core",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "domily runtime core",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
@@ -9,7 +9,7 @@
     "clean": "rimraf lib",
     "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c",
     "prepublishOnly": "npm version patch && bun run build",
-    "release": "npm publish"
+    "release": "npm publish --access public"
   },
   "exports": {
     ".": {

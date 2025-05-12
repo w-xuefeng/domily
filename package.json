@@ -2,7 +2,10 @@
   "name": "domily",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/runtime-core",
+    "packages/router",
+    "packages/vite-plugin-domily",
+    "packages/domily"
   ],
   "private": true,
   "scripts": {
@@ -12,8 +15,8 @@
     "build": "bun build:rc && bun build:dr && bun build:vp",
     "test": "bun run build && bun --filter domily-test dev",
     "build:test": "bun run build && bun --filter domily-test build",
-    "release:runtime-core": "bun --filter @domily/runtime-core release",
-    "release:router": "bun --filter @domily/router release"
+    "release:runtime-core": "cd packages/runtime-core && npm run release",
+    "release:router": "cd packages/domily-router && npm run release"
   },
   "devDependencies": {
     "@types/bun": "latest"

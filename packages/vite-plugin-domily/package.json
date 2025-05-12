@@ -13,6 +13,9 @@
     "build": "bun run scripts/build.ts && bun run scripts/types.ts",
     "prepublishOnly": "bun run build"
   },
+  "files": [
+    "lib"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
