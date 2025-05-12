@@ -1,3 +1,4 @@
-# domily
+# @domily/runtime-core
 
-🚀 Using the DOM API via schema
+
+

@@ -1,0 +1,24 @@
+{
+  "name": "domily",
+  "version": "0.0.1",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    "types": "./lib/types/index.d.ts",
+    "import": "./lib/index.esm.js",
+    "require": "./lib/index.cjs.js"
+  },
+  "scripts": {
+    "build": "bun run scripts/build-script.ts && tsc -b ./tsconfig.json"
+  },
+  "keywords": [
+    "domily"
+  ],
+  "dependencies": {
+    "@domily/router": "latest"
+  },
+  "author": "w-xuefeng@outlook.com",
+  "license": "MIT",
+  "description": "domily"
+}

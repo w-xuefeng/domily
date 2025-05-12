@@ -7,7 +7,8 @@
   "types": "lib/types/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c"
+    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c",
+    "prepublishOnly": "bun run build"
   },
   "exports": {
     ".": {

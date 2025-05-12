@@ -5,7 +5,8 @@
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
-    "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json"
+    "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json",
+    "prepublishOnly": "bun run build"
   },
   "exports": {
     ".": {

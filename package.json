@@ -11,7 +11,9 @@
     "build:vp": "bun --filter vite-plugin-domily build",
     "build": "bun build:rc && bun build:dr && bun build:vp",
     "test": "bun run build && bun --filter domily-test dev",
-    "build:test": "bun run build && bun --filter domily-test build"
+    "build:test": "bun run build && bun --filter domily-test build",
+    "release:runtime-core": "cd packages/runtime-core && npm publish",
+    "release:router": "cd packages/domily-router && npm publish"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -1,5 +1,5 @@
 import { useRouter } from "@domily/router";
-import { Domily, cr, ref, type WithBaseProps } from "@domily/runtime-core";
+import { Domily, signal, cr, type WithBaseProps } from "@domily/runtime-core";
 
 export default function Home({ namespace }: WithBaseProps) {
   const router = useRouter(namespace);
@@ -8,20 +8,16 @@ export default function Home({ namespace }: WithBaseProps) {
     router.push({ name: "home-details" });
   };
 
-  const state = ref("title");
-
-  const props = cr(() => ({
-    title: state.value,
-  }));
+  const title = signal();
 
   const input = {
     tag: "input",
-    props: {
-      value: state.value,
-    },
+    props: cr(() => ({
+      value: title(),
+    })),
     on: {
       input: (e) => {
-        state.value = e.target.value;
+        title(!e.target.value.trim() ? void 0 : e.target.value.trim());
       },
     },
   };
@@ -29,11 +25,13 @@ export default function Home({ namespace }: WithBaseProps) {
   return {
     tag: "div",
     className: "home-page",
-    props,
+    attrs: {
+      title,
+    },
     children: [
       {
         tag: "h1",
-        text: cr(() => state.value),
+        text: title,
       },
       input,
       Domily.div({

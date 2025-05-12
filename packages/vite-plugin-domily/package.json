@@ -10,7 +10,8 @@
     "types": "./lib/types/index.d.ts"
   },
   "scripts": {
-    "build": "bun run scripts/build.ts && bun run scripts/types.ts"
+    "build": "bun run scripts/build.ts && bun run scripts/types.ts",
+    "prepublishOnly": "bun run build"
   },
   "keywords": [],
   "author": "",
