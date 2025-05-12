@@ -1,12 +1,14 @@
 {
   "name": "@domily/router",
+  "version": "0.0.0",
   "type": "module",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
     "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "release": "npm version patch && npm publish"
   },
   "exports": {
     ".": {
