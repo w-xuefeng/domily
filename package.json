@@ -1,9 +1,9 @@
 {
-  "name": "domily",
+  "name": "domily-monorepo",
   "type": "module",
   "workspaces": [
     "packages/runtime-core",
-    "packages/router",
+    "packages/domily-router",
     "packages/vite-plugin-domily",
     "packages/domily"
   ],
@@ -12,7 +12,8 @@
     "build:rc": "bun --filter @domily/runtime-core build",
     "build:dr": "bun --filter @domily/router build",
     "build:vp": "bun --filter vite-plugin-domily build",
-    "build": "bun build:rc && bun build:dr && bun build:vp",
+    "build:domily": "bun --filter domily build",
+    "build": "bun build:rc && bun build:dr && bun build:vp && bun build:domily",
     "test": "bun run build && bun --filter domily-test dev",
     "build:test": "bun run build && bun --filter domily-test build",
     "release:runtime-core": "cd packages/runtime-core && npm run release",

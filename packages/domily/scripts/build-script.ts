@@ -6,12 +6,6 @@ await Bun.$`rm -rf ${outdir}`;
 
 const config = [
   {
-    format: "iife" as const,
-    naming: {
-      entry: "[name].iife.[ext]",
-    },
-  },
-  {
     format: "esm" as const,
     naming: {
       entry: "[name].esm.[ext]",
