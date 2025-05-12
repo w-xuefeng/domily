@@ -1,8 +1,8 @@
-import DomilyFragment from "../custom-elements/fragment";
-import DomilyRouterView from "../custom-elements/router-view";
+import type DomilyFragment from "../custom-elements/fragment";
+import type DomilyRouterView from "../custom-elements/router-view";
 import type DomilyRenderSchema from "../schema";
 
-export type WithFuncType<T, A = never> = T | ((...args: A[]) => T);
+export type WithFuncType<T> = T | ((...args: any[]) => T);
 
 /**
  * ==================== about tag ====================

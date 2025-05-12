@@ -406,7 +406,7 @@ export function handleCSS(
   function objectToCSS(properties: Record<string, any>) {
     let cssString = "";
     for (const [prop, value] of Object.entries(properties)) {
-      if (typeof value === "string") {
+      if (typeof value === "string" || typeof value === "number") {
         const cssProperty = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
         cssString += `${cssProperty}: ${value};`;
       }

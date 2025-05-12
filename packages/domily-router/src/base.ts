@@ -1,5 +1,5 @@
 import {
-  DomilyAppSchema,
+  DomilyApp,
   DomilyRouterView,
   EB,
   ISUtils,
@@ -89,9 +89,9 @@ export default abstract class DomilyRouterBase {
    */
   currentRoute?: IMatchedRoute | null = null;
   /**
-   * the current domily application DomilyAppSchema
+   * the current domily application DomilyApp
    */
-  app: DomilyAppSchema;
+  app: DomilyApp;
   /**
    * the router page config
    */
@@ -165,7 +165,7 @@ export default abstract class DomilyRouterBase {
    */
   afterEach: IRouterAfterEach[] = [];
 
-  constructor(app: DomilyAppSchema, options?: ICreateRouterOptions) {
+  constructor(app: DomilyApp, options?: ICreateRouterOptions) {
     const { routes, base = "" } = options || {};
     this.app = app;
     this.routes =

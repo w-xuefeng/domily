@@ -1,6 +1,6 @@
 import {
   getCurrentInstance,
-  type DomilyAppSchema,
+  type DomilyApp,
   type DOMilyPlugin,
 } from "@domily/runtime-core";
 import DomilyRouterBase, {
@@ -69,7 +69,7 @@ export function createHistoryRouter(
   const beforeEach: IRouterBeforeEach[] = [];
   const afterEach: IRouterAfterEach[] = [];
   const plugin = {
-    install: (app: DomilyAppSchema) => {
+    install: (app: DomilyApp) => {
       const router = new DomilyHistoryRouter(app, option);
       router.beforeEach = beforeEach;
       router.afterEach = afterEach;
@@ -95,7 +95,7 @@ export function createHashRouter(
   const beforeEach: IRouterBeforeEach[] = [];
   const afterEach: IRouterAfterEach[] = [];
   const plugin = {
-    install: (app: DomilyAppSchema) => {
+    install: (app: DomilyApp) => {
       const router = new DomilyHashRouter(app, option);
       router.beforeEach = beforeEach;
       router.afterEach = afterEach;

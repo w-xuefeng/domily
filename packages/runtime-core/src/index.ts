@@ -9,4 +9,4 @@ export * from "./domily";
 export * from "./core/app";
 export * from "./core/reactive";
 
-export { default as DomilyAppSchema } from "./core/app";
+export { default as DomilyApp } from "./core/app";
