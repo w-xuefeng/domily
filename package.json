@@ -12,8 +12,8 @@
     "build": "bun build:rc && bun build:dr && bun build:vp",
     "test": "bun run build && bun --filter domily-test dev",
     "build:test": "bun run build && bun --filter domily-test build",
-    "release:runtime-core": "cd packages/runtime-core && bun run release",
-    "release:router": "cd packages/domily-router && bun run release"
+    "release:runtime-core": "bun --filter @domily/runtime-core release",
+    "release:router": "bun --filter @domily/router release"
   },
   "devDependencies": {
     "@types/bun": "latest"
