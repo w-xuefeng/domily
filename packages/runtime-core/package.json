@@ -1,15 +1,15 @@
 {
   "name": "@domily/runtime-core",
   "version": "0.0.0",
-  "description": "domily",
+  "description": "domily runtime core",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
     "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c",
-    "prepublishOnly": "bun run build",
-    "release": "npm version patch && npm publish"
+    "prepublishOnly": "npm version patch && bun run build",
+    "release": "npm publish"
   },
   "exports": {
     ".": {
@@ -20,8 +20,7 @@
   },
   "keywords": [
     "dom",
-    "schema",
-    "scheme"
+    "domily"
   ],
   "files": [
     "lib"
@@ -35,7 +34,6 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "alien-signals": "^2.0.4",
-    "path-to-regexp": "^8.2.0"
+    "alien-signals": "^2.0.4"
   }
 }

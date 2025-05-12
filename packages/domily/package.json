@@ -16,7 +16,7 @@
     "domily"
   ],
   "dependencies": {
-    "@domily/router": "latest"
+    "@domily/runtime-core": "latest"
   },
   "author": "w-xuefeng@outlook.com",
   "license": "MIT",

@@ -10,8 +10,19 @@
         "typescript": "^5",
       },
     },
+    "packages/domily": {
+      "name": "domily",
+      "version": "0.0.1",
+      "dependencies": {
+        "@domily/runtime-core": "workspace:",
+      },
+    },
     "packages/domily-router": {
       "name": "@domily/router",
+      "version": "0.0.0",
+      "dependencies": {
+        "path-to-regexp": "^8.2.0",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -39,10 +50,9 @@
     },
     "packages/runtime-core": {
       "name": "@domily/runtime-core",
-      "version": "1.0.0",
+      "version": "0.0.0",
       "dependencies": {
         "alien-signals": "^2.0.4",
-        "path-to-regexp": "^8.2.0",
       },
       "devDependencies": {
         "@rollup/plugin-terser": "^0.4.4",
@@ -58,14 +68,15 @@
         "@swc/core": "^1.11.24",
       },
       "devDependencies": {
-        "@domily/router": "workspace:*",
-        "@domily/runtime-core": "workspace:*",
         "@types/less": "^3.0.8",
         "@types/node": "^22.15.2",
+      },
+      "optionalDependencies": {
         "less": "^4.3.0",
         "sass": "^1.87.0",
+      },
+      "peerDependencies": {
         "vite": "^6.3.3",
-        "vite-plugin-inspect": "^11.0.1",
       },
     },
   },
@@ -327,6 +338,8 @@
     "define-lazy-prop": ["define-lazy-prop@3.0.0", "", {}, "sha512-N+MeXYoqr3pOgn8xfyRPREN7gHakLYjhsHhWGT3fWAiL4IkAt0iDw14QiiEm2bE30c5XX5q0FtAA3CK5f9/BUg=="],
 
     "detect-libc": ["detect-libc@1.0.3", "", { "bin": { "detect-libc": "./bin/detect-libc.js" } }, "sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg=="],
+
+    "domily": ["domily@workspace:packages/domily"],
 
     "domily-test": ["domily-test@workspace:packages/domily-test"],
 
