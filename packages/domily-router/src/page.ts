@@ -72,7 +72,7 @@ export default class DomilyPageSchema<
     groupKey?: string
   ) {
     if (this.mountedComponent?.schema?.__dom) {
-      DOMUtils.domMountToParent(this.mountedComponent.schema.__dom, el);
+      this.mountedComponent.mount(el);
     } else {
       const comp = parseComponent(
         Object.assign(

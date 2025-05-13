@@ -8,7 +8,18 @@ export default function Home() {
     router.push({ name: "home-details" });
   };
 
-  const title = signal<string>();
+  const title = signal<string>("1");
+
+  let timer;
+
+  const mounted = () => {
+    timer = setInterval(() => {
+      title(`${Number(title()) + 1}`);
+    }, 1000);
+  };
+  const unmounted = () => {
+    clearInterval(timer);
+  };
 
   const input = {
     tag: "input",
@@ -46,5 +57,7 @@ export default function Home() {
       }),
       Domily["router-view"](),
     ],
+    mounted,
+    unmounted,
   };
 }

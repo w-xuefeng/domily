@@ -102,6 +102,12 @@ export default class DomilyRenderSchema<
    */
   __dom: HTMLElement | Node | null = null;
 
+  /**
+   * life cycle
+   */
+  mounted?: (dom: HTMLElement | Node | null) => void;
+  unmounted?: () => void;
+
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
   static create<
@@ -159,6 +165,20 @@ export default class DomilyRenderSchema<
      * custom element
      */
     this.customElement = merge(this.customElement, schema.customElement);
+
+    /**
+     * life cycle
+     */
+    this.handleLifeCycle(schema);
+  }
+
+  handleLifeCycle(schema: IDomilyRenderOptions<CustomElementMap, K>) {
+    if (schema.mounted && isFunction(schema.mounted)) {
+      this.mounted = schema.mounted;
+    }
+    if (schema.unmounted && isFunction(schema.unmounted)) {
+      this.unmounted = schema.unmounted;
+    }
   }
 
   handleEventsOption(

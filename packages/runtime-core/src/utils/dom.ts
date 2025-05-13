@@ -435,20 +435,11 @@ export function domMountToParent(
   if (!dom) {
     return noop;
   }
-  const container =
-    typeof parent === "string"
-      ? document.querySelector<HTMLElement>(parent)
-      : parent;
+  const container = $el(parent);
   if (!container) {
     return noop;
   }
   container.append(dom);
-  return () => {
-    if (dom) {
-      removeDOM(dom);
-    }
-    dom = null;
-  };
 }
 
 export function removeDOM(dom: HTMLElement | Node | ShadowRoot) {
@@ -503,12 +494,22 @@ export function mountable(schema: DomilyRenderSchema<any, any, any>) {
     unmount: () => {
       if (schema.__dom) {
         removeDOM(schema.__dom);
+        if (typeof schema.unmounted === "function") {
+          schema.unmounted();
+        }
       }
     },
     mount: (
       parent: HTMLElement | Document | ShadowRoot | string = document.body
     ) => {
-      domMountToParent(schema.render(), parent);
+      if (schema.__dom) {
+        domMountToParent(schema.__dom, parent);
+      } else {
+        domMountToParent(schema.render(), parent);
+      }
+      if (typeof schema.mounted === "function") {
+        schema.mounted(schema.__dom);
+      }
     },
   };
   return result;

@@ -221,6 +221,12 @@ interface IDomilyRenderOptions<
    * custom element
    */
   customElement?: IDomilyCustomElementOptions;
+
+  /**
+   * life cycle
+   */
+  mounted?: (dom: HTMLElement | Node | null) => void;
+  unmounted?: () => void;
 }
 ```
 
