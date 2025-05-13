@@ -9,6 +9,7 @@ import type {
   DOMilyCustomElementComponent,
   DOMilyMountableRender,
   IDomilyRenderOptions,
+  WithFuncType,
 } from "../type/types";
 import { EventBus, EVENTS } from "../../../utils/event-bus";
 
@@ -84,7 +85,7 @@ export function isDomilyRenderOptions(
 }
 
 export function domilyChildToDomilyRenderSchema(
-  input?: DOMilyChild | (() => DOMilyChild)
+  input?: WithFuncType<DOMilyChild>
 ): DomilyRenderSchema<any, any> | null {
   if (!input) {
     return null;
@@ -136,7 +137,7 @@ export function domilyChildToDomilyRenderSchema(
 }
 
 export function domilyChildToDOMilyMountableRender(
-  input?: DOMilyChild | (() => DOMilyChild)
+  input?: WithFuncType<DOMilyChild>
 ): DOMilyMountableRender<any, any, any> | null {
   if (!input) {
     return null;
@@ -156,7 +157,7 @@ export function domilyChildToDOMilyMountableRender(
 }
 
 export function domilyChildToDOM(
-  child: DOMilyChild | DOMilyChildDOM | (() => DOMilyChild | DOMilyChildDOM)
+  child: WithFuncType<DOMilyChild | DOMilyChildDOM>
 ): HTMLElement | Node | null {
   if (!child) {
     return null;

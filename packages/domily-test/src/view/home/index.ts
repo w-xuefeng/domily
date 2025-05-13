@@ -1,14 +1,14 @@
 import { useRouter } from "@domily/router";
-import { Domily, signal, cr, type WithBaseProps } from "@domily/runtime-core";
+import { Domily, signal, cr } from "@domily/runtime-core";
 
-export default function Home({ namespace }: WithBaseProps) {
-  const router = useRouter(namespace);
+export default function Home() {
+  const router = useRouter();
 
   const goDetails = () => {
     router.push({ name: "home-details" });
   };
 
-  const title = signal();
+  const title = signal<string>();
 
   const input = {
     tag: "input",

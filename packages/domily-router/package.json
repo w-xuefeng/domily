@@ -7,8 +7,8 @@
   "types": "lib/types/index.d.ts",
   "scripts": {
     "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json",
-    "prepublishOnly": "bun run build",
-    "release": "npm version patch && npm publish --access public"
+    "prepublishOnly": "npm version patch && bun run build",
+    "release": "npm publish --access public"
   },
   "exports": {
     ".": {
@@ -21,13 +21,11 @@
     "lib"
   ],
   "dependencies": {
-    "path-to-regexp": "^8.2.0"
+    "path-to-regexp": "^8.2.0",
+    "@domily/runtime-core": "workspace:^"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5",
-    "@domily/runtime-core": "^0.0.1"
+    "@types/bun": "latest",
+    "typescript": "^5"
   }
 }

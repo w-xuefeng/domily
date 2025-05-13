@@ -2,16 +2,17 @@ import type {
   DOMilyCustomElementComponent,
   DOMilyMountableRender,
   IDomilyRenderOptions,
+  WithFuncType,
 } from "../render";
 import DomilyRenderSchema from "../render/schema";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 
 export interface DOMilyComponent {
   (props?: any):
-    | DomilyRenderSchema
-    | IDomilyRenderOptions<any, any>
-    | DOMilyMountableRender<any, any>
-    | DOMilyCustomElementComponent;
+    | WithFuncType<DomilyRenderSchema>
+    | WithFuncType<IDomilyRenderOptions<any, any>>
+    | WithFuncType<DOMilyMountableRender<any, any>>
+    | WithFuncType<DOMilyCustomElementComponent>;
 }
 
 export type AsyncDOMilyComponentModule = Promise<{ default: DOMilyComponent }>;

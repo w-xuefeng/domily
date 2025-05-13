@@ -1,40 +1,40 @@
-import { type IDomilyPageSchema } from '@domily/router';
+import { type IDomilyPageSchema } from "@domily/router";
 
 export const routes: IDomilyPageSchema[] = [
   {
-    name: 'index',
-    path: '/',
-    component: import('../view/layout'),
+    name: "index",
+    path: "/",
+    component: import("../view/layout"),
     meta: {
       authorize: [],
     },
     children: [
       {
-        name: 'home',
-        path: '/home',
-        component: import('../view/home'),
+        name: "home",
+        path: "/home",
+        component: import("../view/home"),
         meta: {
-          title: '主页',
+          title: "主页",
           authorize: [],
         },
         children: [
           {
-            name: 'home-details',
-            path: '/home/details',
-            component: import('../view/details'),
+            name: "home-details",
+            path: "/home/details",
+            component: import("../view/details"),
             meta: {
-              title: '概况',
+              title: "概况",
               authorize: [],
             },
             children: [
               {
-                name: 'home-params-details',
-                path: '/home/details/:id',
+                name: "home-params-details",
+                path: "/home/details/:id",
                 meta: {
-                  title: '详情',
+                  title: "详情",
                   authorize: [],
                 },
-                component: import('../view/details/params'),
+                component: import("../view/details/params"),
               },
             ],
           },
@@ -43,11 +43,11 @@ export const routes: IDomilyPageSchema[] = [
     ],
   },
   {
-    name: 'login',
-    path: '/login',
+    name: "login",
+    path: "/login",
     meta: {
-      title: '登录',
+      title: "登录",
     },
-    component: import('../view/login'),
+    component: import("../view/login"),
   },
 ];

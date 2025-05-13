@@ -1,9 +1,9 @@
-import { createHistoryRouter } from '@domily/router';
-import { routes } from './router';
-import { isLogin } from '../utils';
+import { createHistoryRouter } from "@domily/router";
+import { routes } from "./router";
+import { isLogin } from "../utils";
 
 const router = createHistoryRouter({
-  base: '/',
+  base: "/",
   routes,
 });
 
@@ -15,7 +15,7 @@ router.beforeEach((from, to, next) => {
   }
 });
 
-router.afterEach(e => {
+router.afterEach((e) => {
   if (e?.meta?.title) {
     document.title = e.meta.title;
   }

@@ -2,7 +2,12 @@ import type DomilyFragment from "../custom-elements/fragment";
 import type DomilyRouterView from "../custom-elements/router-view";
 import type DomilyRenderSchema from "../schema";
 
-export type WithFuncType<T> = T | ((...args: any[]) => T);
+export interface ISignalFunc<T> {
+  (): T;
+  (value: T): void;
+}
+
+export type WithFuncType<T> = T | ((...args: any[]) => T) | ISignalFunc<T>;
 
 /**
  * ==================== about tag ====================
@@ -140,7 +145,7 @@ export type DOMilyChild =
   | DOMilyCustomElementComponent<any, any, any>;
 
 export type DOMilyChildren =
-  | (DOMilyChild | DOMilyChildDOM | (() => DOMilyChild | DOMilyChildDOM))[]
+  | WithFuncType<DOMilyChild | DOMilyChildDOM>[]
   | undefined
   | null;
 
