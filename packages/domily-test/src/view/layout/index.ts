@@ -1,14 +1,20 @@
-import Header from '../../components/header.d.md';
+import Header from "../../components/header.d.md";
 
 export default function Layout() {
   return {
-    tag: 'div',
-    className: 'layout',
+    tag: "div",
+    className: "layout",
     children: [
       Header(),
       {
-        tag: 'router-view',
+        tag: "router-view",
       },
     ],
+    mounted(layout) {
+      console.log("layout mounted", layout);
+    },
+    unmounted() {
+      console.log("layout unmounted");
+    },
   };
 }

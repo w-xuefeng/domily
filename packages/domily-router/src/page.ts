@@ -1,7 +1,6 @@
 import {
   EB,
   ISUtils,
-  DOMUtils,
   parseComponent,
   type DOMilyComponent,
   type AsyncDOMilyComponentModule,

@@ -5,7 +5,9 @@
   "mapList": {
     "list": ":menus",
     "map": ":menuItem"
-  }
+  },
+  "mounted": ":mounted",
+  "unmounted": ":unmounted",
 }
 ```
 
@@ -25,6 +27,15 @@ const menus = [
     path: '/home/details'
   }
 ]
+
+
+const mounted = (menu) => {
+  console.log('menu mounted', menu)
+}
+const unmounted = () => {
+  console.log('menu unmounted')
+}
+
 ```
 
 ```scss

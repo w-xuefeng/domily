@@ -19,7 +19,9 @@
       }
     },
     ":Menu()"
-  ]
+  ],
+  "mounted": ":mounted",
+  "unmounted": ":unmounted",
 }
 ```
 
@@ -30,6 +32,13 @@ import { ref, cr } from "@domily/runtime-core";
 
 const showLogo = ref(true);
 const logoIf = cr(() => showLogo.value)
+
+const mounted = (header) => {
+  console.log('header mounted', header)
+}
+const unmounted = () => {
+  console.log('header unmounted')
+}
 
 const handleClick = (e: Event) => {
   console.log('click', e)

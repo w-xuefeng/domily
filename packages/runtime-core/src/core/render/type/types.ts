@@ -238,3 +238,13 @@ export interface DOMilyMountableRender<
   mount: (parent?: HTMLElement | Document | ShadowRoot | string) => void;
   unmount: () => void;
 }
+
+/**
+ * ==================== about lifecycle ====================
+ */
+
+export interface ILifecycleItem {
+  dom: HTMLElement | Node | null;
+  mounted?: (dom: HTMLElement | Node | null) => void;
+  unmounted?: () => void;
+}

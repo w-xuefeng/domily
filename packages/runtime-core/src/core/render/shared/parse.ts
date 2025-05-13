@@ -9,6 +9,7 @@ import type {
   DOMilyCustomElementComponent,
   DOMilyMountableRender,
   IDomilyRenderOptions,
+  ILifecycleItem,
   WithFuncType,
 } from "../type/types";
 import { EventBus, EVENTS } from "../../../utils/event-bus";
@@ -84,8 +85,21 @@ export function isDomilyRenderOptions(
   );
 }
 
+export function gatherLifeCycle(
+  item?: ILifecycleItem,
+  schema?: DomilyRenderSchema<any, any> | null
+) {
+  if (isObject(item) && isFunction(schema?.mounted)) {
+    item.mounted = schema.mounted;
+  }
+  if (isObject(item) && isFunction(schema?.unmounted)) {
+    item.unmounted = schema.unmounted;
+  }
+}
+
 export function domilyChildToDomilyRenderSchema(
-  input?: WithFuncType<DOMilyChild>
+  input?: WithFuncType<DOMilyChild>,
+  gatherChildLifeCycle?: ILifecycleItem
 ): DomilyRenderSchema<any, any> | null {
   if (!input) {
     return null;
@@ -101,10 +115,12 @@ export function domilyChildToDomilyRenderSchema(
       });
       originalSchema = nextSchema;
     });
+    gatherLifeCycle(gatherChildLifeCycle, originalSchema);
     return originalSchema;
   }
 
   if (isDomilyRenderSchema(input)) {
+    gatherLifeCycle(gatherChildLifeCycle, input);
     return input;
   }
 
@@ -122,15 +138,19 @@ export function domilyChildToDomilyRenderSchema(
       },
       schema.customElement
     );
+    gatherLifeCycle(gatherChildLifeCycle, schema);
     return schema;
   }
 
   if (isDOMilyMountableRender(input)) {
+    gatherLifeCycle(gatherChildLifeCycle, input.schema);
     return input.schema;
   }
 
   if (isDomilyRenderOptions(input)) {
-    return DomilyRenderSchema.create<any, any, any>(input);
+    const schema = DomilyRenderSchema.create<any, any, any>(input);
+    gatherLifeCycle(gatherChildLifeCycle, schema);
+    return schema;
   }
 
   return null;
@@ -157,7 +177,8 @@ export function domilyChildToDOMilyMountableRender(
 }
 
 export function domilyChildToDOM(
-  child: WithFuncType<DOMilyChild | DOMilyChildDOM>
+  child: WithFuncType<DOMilyChild | DOMilyChildDOM>,
+  gatherChildLifeCycleQueue?: ILifecycleItem[]
 ): HTMLElement | Node | null {
   if (!child) {
     return null;
@@ -178,13 +199,23 @@ export function domilyChildToDOM(
     }
   }
 
+  const lifecycle: ILifecycleItem = { dom: null };
+
   const childSchema = domilyChildToDomilyRenderSchema(
-    child as DOMilyChild | (() => DOMilyChild)
+    child as WithFuncType<DOMilyChild>,
+    lifecycle
   );
 
   if (!childSchema) {
     return null;
   }
 
-  return childSchema.render();
+  const dom = childSchema.render();
+  lifecycle.dom = dom;
+
+  if (Array.isArray(gatherChildLifeCycleQueue)) {
+    gatherChildLifeCycleQueue.push(lifecycle);
+  }
+
+  return dom;
 }

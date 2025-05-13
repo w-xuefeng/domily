@@ -9,6 +9,7 @@ import type {
   DOMilyTags,
   IDomilyCustomElementOptions,
   IDomilyRenderOptions,
+  ILifecycleItem,
   TDomilyRenderProperties,
   WithFuncType,
 } from "./type/types";
@@ -107,6 +108,7 @@ export default class DomilyRenderSchema<
    */
   mounted?: (dom: HTMLElement | Node | null) => void;
   unmounted?: () => void;
+  private childLifeCycleQueue: ILifecycleItem[] = [];
 
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
@@ -173,12 +175,27 @@ export default class DomilyRenderSchema<
   }
 
   handleLifeCycle(schema: IDomilyRenderOptions<CustomElementMap, K>) {
-    if (schema.mounted && isFunction(schema.mounted)) {
-      this.mounted = schema.mounted;
-    }
-    if (schema.unmounted && isFunction(schema.unmounted)) {
-      this.unmounted = schema.unmounted;
-    }
+    this.mounted = (dom) => {
+      if (schema.mounted && isFunction(schema.mounted)) {
+        schema.mounted(dom);
+      }
+      this.childLifeCycleQueue.forEach((child) => {
+        if (child.mounted && isFunction(child.mounted)) {
+          child.mounted(child.dom);
+        }
+      });
+    };
+
+    this.unmounted = () => {
+      this.childLifeCycleQueue.forEach((child) => {
+        if (child.unmounted && isFunction(child.unmounted)) {
+          child.unmounted();
+        }
+      });
+      if (schema.unmounted && isFunction(schema.unmounted)) {
+        schema.unmounted();
+      }
+    };
   }
 
   handleEventsOption(
@@ -417,7 +434,7 @@ export default class DomilyRenderSchema<
     });
 
     const children = (this.children
-      ?.map((child) => domilyChildToDOM(child))
+      ?.map((child) => domilyChildToDOM(child, this.childLifeCycleQueue))
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
 
     if (previousCSS) {

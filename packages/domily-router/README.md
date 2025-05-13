@@ -2,13 +2,6 @@
 
 A lightweight router implementation for the Domily applications.
 
-## Features
-
-- Path-based routing with path-to-regexp
-- Support for both ESM and CommonJS
-- TypeScript support
-- Minimal dependencies
-
 ## Installation
 
 ```bash
