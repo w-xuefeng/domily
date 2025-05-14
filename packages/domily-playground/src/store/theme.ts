@@ -1,4 +1,4 @@
-import { effect, signal } from "@domily/runtime-core";
+import { effect, signal } from "domily";
 
 type ThemeObject = {
   light: string;

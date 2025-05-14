@@ -10,8 +10,8 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
+    "domily": "workspace:^",
     "@domily/router": "workspace:^",
-    "@domily/runtime-core": "workspace:^",
     "monaco-editor": "^0.52.2"
   },
   "devDependencies": {

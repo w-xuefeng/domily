@@ -21,7 +21,7 @@
     "lib"
   ],
   "dependencies": {
-    "@domily/runtime-core": "latest"
+    "@domily/runtime-core": "workspace:^"
   },
   "author": "w-xuefeng@outlook.com",
   "license": "MIT",

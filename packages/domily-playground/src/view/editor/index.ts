@@ -1,11 +1,9 @@
-import { computed, ref, render } from "@domily/runtime-core";
+import { computed, render, type ISignalFunc } from "domily";
 import useTheme from "@/store/theme";
 import * as monaco from "monaco-editor";
 import "./use-worker";
 
-export default function Editor() {
-  const code = ref("");
-
+export default function Editor(props: { code: ISignalFunc<string> }) {
   const themeStore = useTheme((_, themeDetail) => {
     if (themeDetail === "dark") {
       monaco.editor.setTheme("vs-dark");
@@ -31,16 +29,49 @@ export default function Editor() {
 
   let editor: monaco.editor.IStandaloneCodeEditor;
 
+  let contentChangeTimer;
+
   const mounted = (dom: HTMLElement | null) => {
     const editorDOM = dom?.querySelector<HTMLElement>(".editor");
     if (!editorDOM) {
       return;
     }
     editor = monaco.editor.create(editorDOM, {
-      value: code.value,
-      language: "typescript",
+      value: props.code(),
+      language: "javascript",
       theme: editorInitialTheme.value,
       automaticLayout: true,
+    });
+
+    const model = editor.getModel();
+    const readOnlyRange = new monaco.Range(1, 1, 5, model.getLineMaxColumn(5));
+
+    model.deltaDecorations(
+      [],
+      [
+        {
+          range: readOnlyRange,
+          options: {
+            isWholeLine: true,
+            className: "read-only-line",
+            hoverMessage: { value: "此行为只读区域" },
+            inlineClassName: "no-edit",
+            stickiness:
+              monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges,
+          },
+        },
+      ]
+    );
+    editor.getModel().onDidChangeContent(() => {
+      clearTimeout(contentChangeTimer);
+      contentChangeTimer = setTimeout(() => {
+        props.code(editor.getValue());
+      }, 1000);
+    });
+
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
+      await editor.getAction("editor.action.formatDocument").run();
+      props.code(editor.getValue());
     });
   };
 
@@ -60,6 +91,14 @@ export default function Editor() {
         ".editor": {
           width: "100%",
           height: "100%",
+          ".read-only-line": {
+            backgroundColor: "var(--read-only-background)",
+            pointerEvents: "none",
+            cursor: "not-allowed",
+          },
+          ".no-edit": {
+            cursor: "not-allowed",
+          },
         },
       },
     },

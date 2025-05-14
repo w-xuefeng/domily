@@ -1,4 +1,4 @@
-import { createApp } from "@domily/runtime-core";
+import { createApp } from "domily";
 
 import App from "./app";
 import router from "./routers";

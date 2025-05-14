@@ -21,17 +21,17 @@ importers:
   packages/domily:
     dependencies:
       '@domily/runtime-core':
-        specifier: latest
-        version: 0.0.2
+        specifier: workspace:^
+        version: link:../runtime-core
 
   packages/domily-playground:
     dependencies:
       '@domily/router':
         specifier: workspace:^
         version: link:../domily-router
-      '@domily/runtime-core':
+      domily:
         specifier: workspace:^
-        version: link:../runtime-core
+        version: link:../domily
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
@@ -73,37 +73,6 @@ importers:
       typescript:
         specifier: ^5
         version: 5.8.3
-
-  packages/domily-test:
-    dependencies:
-      '@domily/router':
-        specifier: workspace:^
-        version: link:../domily-router
-      '@domily/runtime-core':
-        specifier: workspace:^
-        version: link:../runtime-core
-    devDependencies:
-      '@types/less':
-        specifier: ^3.0.8
-        version: 3.0.8
-      '@types/node':
-        specifier: ^22.15.2
-        version: 22.15.17
-      less:
-        specifier: ^4.3.0
-        version: 4.3.0
-      sass:
-        specifier: ^1.87.0
-        version: 1.88.0
-      vite:
-        specifier: ^6.3.3
-        version: 6.3.5(@types/node@22.15.17)(less@4.3.0)(sass@1.88.0)(terser@5.39.0)(yaml@2.7.1)
-      vite-plugin-domily:
-        specifier: workspace:^
-        version: link:../vite-plugin-domily
-      vite-plugin-inspect:
-        specifier: ^11.0.1
-        version: 11.0.1(vite@6.3.5(@types/node@22.15.17)(less@4.3.0)(sass@1.88.0)(terser@5.39.0)(yaml@2.7.1))
 
   packages/runtime-core:
     dependencies:
@@ -156,9 +125,6 @@ packages:
   '@babel/helper-validator-identifier@7.27.1':
     resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
-
-  '@domily/runtime-core@0.0.2':
-    resolution: {integrity: sha512-0ZcF1sCh4AfLjjpYXlhvkQEwhJx03XY078poyszsd8da5UxKF5DLgh5YKRVd5yy8+WRTNTxAk5NsBFoE/PeU/Q==}
 
   '@emnapi/core@1.4.3':
     resolution: {integrity: sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g==}
@@ -3115,10 +3081,6 @@ snapshots:
       picocolors: 1.1.1
 
   '@babel/helper-validator-identifier@7.27.1': {}
-
-  '@domily/runtime-core@0.0.2':
-    dependencies:
-      alien-signals: 2.0.4
 
   '@emnapi/core@1.4.3':
     dependencies:

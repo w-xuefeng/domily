@@ -69,7 +69,7 @@
 ```
 
 ```ts
-import { cr, signal } from "@domily/runtime-core";
+import { cr, signal } from "domily";
 import Logo from "@/assets/imgs/logo.webp";
 import useTheme from "@/store/theme";
 import IconSun from "@/assets/imgs/sun.svg";
@@ -137,7 +137,7 @@ const onThemeChange = (e) => {
       width: 55px;
       height: 30px;
       outline: none;
-      background: var(--body-background-color);
+      background: var(--switch-theme-background-color);
       color: var(--text-color);
       border-radius: 4px;
     }
