@@ -1,6 +1,6 @@
 {
   "name": "domily",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
@@ -10,8 +10,9 @@
     "require": "./lib/index.cjs.js"
   },
   "scripts": {
+    "dev": "bun ./scripts/set-runtime-core-version.ts dev",
     "build": "bun run scripts/build-script.ts && tsc -b ./tsconfig.json",
-    "prepublishOnly": "npm version patch && bun run build",
+    "prepublishOnly": "npm version patch && bun run build && bun ./scripts/set-runtime-core-version.ts prod",
     "release": "npm publish --access public"
   },
   "keywords": [
@@ -21,7 +22,7 @@
     "lib"
   ],
   "dependencies": {
-    "@domily/runtime-core": "workspace:^"
+    "@domily/runtime-core": "^0.0.3"
   },
   "author": "w-xuefeng@outlook.com",
   "license": "MIT",
