@@ -63,6 +63,10 @@ function App(Domily) {
   });
 }`);
 
+  const mainMounted = () => {
+    document.querySelector("#global-loading")?.remove();
+  };
+
   return {
     tag: "div",
     css: {
@@ -85,6 +89,7 @@ function App(Domily) {
         tag: "main",
         className: "main-container",
         children: [Editor({ code }), Preview({ code })],
+        mounted: mainMounted,
       },
     ],
   };
