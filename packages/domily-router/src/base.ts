@@ -335,9 +335,22 @@ export default abstract class DomilyRouterBase {
       (this.mode === "history"
         ? globalThis.location.href.replace(globalThis.location.origin, "")
         : globalThis.location.hash.slice(1));
-    const matched = matchRoute(Object.values(this.routesPathFlatMap), pathname);
+    const wildcardPath = "/*";
+    const routesPathFlatMapExcludeWildcard = (() => {
+      const value = {
+        ...this.routesPathFlatMap,
+      };
+      if (value[wildcardPath]) {
+        Reflect.deleteProperty(value, wildcardPath);
+      }
+      return value;
+    })();
+    const matched = matchRoute(
+      Object.values(routesPathFlatMapExcludeWildcard),
+      pathname
+    );
     if (!matched) {
-      const wildcard = this.routesPathMap["/*"];
+      const wildcard = this.routesPathMap[wildcardPath];
       return wildcard
         ? Object.assign(wildcard, generateFullUrl(pathname, {}, this.mode))
         : null;
