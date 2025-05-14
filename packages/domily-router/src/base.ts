@@ -11,6 +11,7 @@ import {
   handleStringPathname,
   type IMatchedRoute,
   matchRoute,
+  removeEndSlash,
 } from "./match";
 import { ROUTER_EVENTS } from "./event";
 import DomilyPageSchema, { type IDomilyPageSchema } from "./page";
@@ -24,6 +25,8 @@ const GroupKey = {
     return `${text}-${GroupKey.count}`;
   },
 };
+
+const wildcardPath = "/*";
 
 const getGroupKey = (route?: IMatchedRoute | null) =>
   GroupKey.increase(route?.name || route?.path || "GROUP");
@@ -63,6 +66,7 @@ export default abstract class DomilyRouterBase {
    * init router for the specific router
    */
   abstract initRouter(): void;
+  base: string = "/";
   /**
    * the store for the global page router history
    */
@@ -166,12 +170,19 @@ export default abstract class DomilyRouterBase {
   afterEach: IRouterAfterEach[] = [];
 
   constructor(app: DomilyApp, options?: ICreateRouterOptions) {
-    const { routes, base = "" } = options || {};
+    const { routes, base = "/" } = options || {};
+    this.base = base;
     this.app = app;
     this.routes =
       routes?.map((e) => {
         e.namespace = e.namespace || app.namespace;
-        e.path = combinePaths(base, e.path);
+        e.path = removeEndSlash(
+          e.path.startsWith(wildcardPath)
+            ? e.path
+            : e.path.startsWith("*")
+            ? wildcardPath
+            : combinePaths(base, e.path)
+        );
         return DomilyPageSchema.create(e);
       }) || [];
     this.currentRoute = this.match();
@@ -335,7 +346,6 @@ export default abstract class DomilyRouterBase {
       (this.mode === "history"
         ? globalThis.location.href.replace(globalThis.location.origin, "")
         : globalThis.location.hash.slice(1));
-    const wildcardPath = "/*";
     const routesPathFlatMapExcludeWildcard = (() => {
       const value = {
         ...this.routesPathFlatMap,
@@ -352,12 +362,15 @@ export default abstract class DomilyRouterBase {
     if (!matched) {
       const wildcard = this.routesPathMap[wildcardPath];
       return wildcard
-        ? Object.assign(wildcard, generateFullUrl(pathname, {}, this.mode))
+        ? Object.assign(
+            wildcard,
+            generateFullUrl(pathname, {}, this.mode, this.base)
+          )
         : null;
     }
     return Object.assign(
       matched,
-      generateFullUrl(matched.path, matched, this.mode)
+      generateFullUrl(matched.path, matched, this.mode, this.base)
     );
   }
 
@@ -454,7 +467,7 @@ export default abstract class DomilyRouterBase {
     };
     const resolveFullPath = (routes?: { path: string }) => {
       const { fullPath, href } = routes
-        ? generateFullUrl(routes.path, data, this.mode)
+        ? generateFullUrl(routes.path, data, this.mode, this.base)
         : {};
       return {
         fullPath,
