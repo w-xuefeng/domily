@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           curl -fsSL https://bun.sh/install | bash
-          source /home/runner/.bashrc
+          { ln -s $HOME/.bun/bin/bun /usr/bin } || { sudo ln -s $HOME/.bun/bin/bun /usr/bin }
           npm install pnpm@latest -g
           pnpm install
 
