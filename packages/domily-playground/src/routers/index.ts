@@ -2,7 +2,7 @@ import { createHistoryRouter } from "@domily/router";
 import { routes } from "./router";
 
 const router = createHistoryRouter({
-  base: "/",
+  base: "/domily",
   routes,
 });
 
