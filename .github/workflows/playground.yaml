@@ -25,6 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           curl -fsSL https://bun.sh/install | bash
+          source /home/runner/.bashrc
           npm install pnpm@latest -g
           pnpm install
 
