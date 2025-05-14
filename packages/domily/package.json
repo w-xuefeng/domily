@@ -1,6 +1,6 @@
 {
   "name": "domily",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
@@ -10,7 +10,9 @@
     "require": "./lib/index.cjs.js"
   },
   "scripts": {
-    "build": "bun run scripts/build-script.ts && tsc -b ./tsconfig.json"
+    "build": "bun run scripts/build-script.ts && tsc -b ./tsconfig.json",
+    "prepublishOnly": "npm version patch && bun run build",
+    "release": "npm publish --access public"
   },
   "keywords": [
     "domily"
