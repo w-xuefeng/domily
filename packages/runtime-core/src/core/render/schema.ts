@@ -295,17 +295,47 @@ export default class DomilyRenderSchema<
   }
 
   handleCustomElement(dom: HTMLElement | Node) {
-    const { enable, name, useShadowDOM, shadowDOMMode } =
-      this.customElement || {};
+    const {
+      enable,
+      name,
+      useShadowDOM,
+      shadowDOMMode,
+      css: customElementCSS,
+    } = this.customElement || {};
     if (!enable || !name) {
       return dom;
+    }
+
+    let previousCSS: HTMLStyleElement | null = null;
+
+    if (customElementCSS) {
+      previousCSS = handleCSS(handleWithFunType(customElementCSS));
+      handleFunTypeEffect(customElementCSS, (css) => {
+        const nextStyle = handleCSS(css);
+        if (
+          previousCSS &&
+          nextStyle &&
+          previousCSS.innerText === nextStyle.innerText
+        ) {
+          return;
+        }
+        previousCSS = replaceDOM(
+          previousCSS,
+          nextStyle
+        ) as HTMLStyleElement | null;
+      });
     }
     const CustomElementComponent = class extends HTMLElement {
       shadowRoot: ShadowRoot | null = null;
       child: HTMLElement | Node | null = null;
-      constructor(child: HTMLElement | Node | null) {
+      styleTag?: HTMLStyleElement | null = null;
+      constructor(
+        child: HTMLElement | Node | null,
+        styleTag?: HTMLStyleElement | null
+      ) {
         super();
         this.child = child;
+        this.styleTag = styleTag;
         if (useShadowDOM) {
           this.shadowRoot = this.attachShadow({
             mode: shadowDOMMode || "open",
@@ -314,6 +344,9 @@ export default class DomilyRenderSchema<
       }
       connectedCallback() {
         const container = this.shadowRoot ?? this;
+        if (this.styleTag) {
+          container.appendChild(this.styleTag);
+        }
         if (this.child) {
           container.appendChild(this.child);
         }
@@ -322,9 +355,9 @@ export default class DomilyRenderSchema<
     const CEC = customElements.get(name);
     if (!CEC) {
       customElements.define(name, CustomElementComponent);
-      return new CustomElementComponent(dom);
+      return new CustomElementComponent(dom, previousCSS);
     }
-    return new CEC(dom);
+    return new CEC(dom, previousCSS);
   }
 
   domInterrupter(dom: HTMLElement | Node) {

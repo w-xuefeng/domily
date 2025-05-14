@@ -1,0 +1,12 @@
+@import "@/assets/styles/common.less";
+@import "@/assets/styles/theme-dark.less";
+@import "@/assets/styles/theme-light.less";
+
+body {
+  margin: 0;
+  background-color: var(--body-background-color);
+  .light-theme();
+  &[theme="dark"] {
+    .dark-theme();
+  }
+}

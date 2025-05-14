@@ -15,7 +15,7 @@ function filterCode(
   options: {
     ts?: boolean;
     mode?: Mode;
-  },
+  }
 ) {
   const ast = parseSync(code, {
     syntax: options.ts ? "typescript" : "ecmascript",
@@ -119,7 +119,7 @@ async function handleStyle(
     ts: boolean;
     cssPreprocessor: string;
   },
-  mode: Mode,
+  mode: Mode
 ) {
   if (code.cssPreprocessor === "css") {
     return code;
@@ -201,11 +201,11 @@ export async function transformDOMSingleFileComponentCode(
   name: string,
   code: string,
   mode: Mode,
-  options: VitePluginDomilyOptions,
+  options: VitePluginDomilyOptions
 ) {
   const { script, style, json, ts } = await handleStyle(
     handleScript(parse(code)),
-    mode,
+    mode
   );
   const template = handleTemplateStyle(json, style);
 

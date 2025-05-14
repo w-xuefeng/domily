@@ -8,8 +8,8 @@
     "build:vp": "lerna run build --scope=vite-plugin-domily",
     "build:domily": "lerna run build --scope=domily",
     "build": "bun build:rc && bun build:dr && bun build:vp && bun build:domily",
-    "build:test": "bun run build && lerna run build --scope=domily-test",
-    "test": "bun run build && lerna run dev --scope=domily-test",
+    "build:playground": "bun run build && lerna run build --scope=domily-playground",
+    "playground": "bun run build && lerna run dev --scope=domily-playground",
     "release:runtime-core": "cd packages/runtime-core && bun release",
     "release:router": "cd packages/domily-router && bun release"
   },

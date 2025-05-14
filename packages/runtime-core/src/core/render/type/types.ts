@@ -131,6 +131,7 @@ export interface IDomilyCustomElementOptions {
   name?: string;
   useShadowDOM?: boolean;
   shadowDOMMode?: "open" | "closed";
+  css?: WithFuncType<string | DOMilyCascadingStyleSheets>;
 }
 
 /**

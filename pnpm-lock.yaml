@@ -22,7 +22,41 @@ importers:
     dependencies:
       '@domily/runtime-core':
         specifier: latest
-        version: 0.0.1
+        version: 0.0.2
+
+  packages/domily-playground:
+    dependencies:
+      '@domily/router':
+        specifier: workspace:^
+        version: link:../domily-router
+      '@domily/runtime-core':
+        specifier: workspace:^
+        version: link:../runtime-core
+      monaco-editor:
+        specifier: ^0.52.2
+        version: 0.52.2
+    devDependencies:
+      '@types/less':
+        specifier: ^3.0.8
+        version: 3.0.8
+      '@types/node':
+        specifier: ^22.15.2
+        version: 22.15.17
+      less:
+        specifier: ^4.3.0
+        version: 4.3.0
+      sass:
+        specifier: ^1.87.0
+        version: 1.88.0
+      vite:
+        specifier: ^6.3.3
+        version: 6.3.5(@types/node@22.15.17)(less@4.3.0)(sass@1.88.0)(terser@5.39.0)(yaml@2.7.1)
+      vite-plugin-domily:
+        specifier: workspace:^
+        version: link:../vite-plugin-domily
+      vite-plugin-inspect:
+        specifier: ^11.0.1
+        version: 11.0.1(vite@6.3.5(@types/node@22.15.17)(less@4.3.0)(sass@1.88.0)(terser@5.39.0)(yaml@2.7.1))
 
   packages/domily-router:
     dependencies:
@@ -123,8 +157,8 @@ packages:
     resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
 
-  '@domily/runtime-core@0.0.1':
-    resolution: {integrity: sha512-+PLyCgWwlrayIX82Zon2r71FETcRB2YwldmH5i/wiA64Hw6PvzjLSwLsXXNNV1a/jevm4RVyryjAPUmPo+CBYw==}
+  '@domily/runtime-core@0.0.2':
+    resolution: {integrity: sha512-0ZcF1sCh4AfLjjpYXlhvkQEwhJx03XY078poyszsd8da5UxKF5DLgh5YKRVd5yy8+WRTNTxAk5NsBFoE/PeU/Q==}
 
   '@emnapi/core@1.4.3':
     resolution: {integrity: sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g==}
@@ -2105,6 +2139,9 @@ packages:
     resolution: {integrity: sha512-xV2bxeN6F7oYjZWTe/YPAy6MN2M+sL4u/Rlm2AHCIVGfo2p1yGmBHQ6vHehl4bRTZBdHu3TSkWdYgkwpYzAGSw==}
     engines: {node: '>=0.10.0'}
 
+  monaco-editor@0.52.2:
+    resolution: {integrity: sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ==}
+
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
     engines: {node: '>=10'}
@@ -3079,7 +3116,7 @@ snapshots:
 
   '@babel/helper-validator-identifier@7.27.1': {}
 
-  '@domily/runtime-core@0.0.1':
+  '@domily/runtime-core@0.0.2':
     dependencies:
       alien-signals: 2.0.4
 
@@ -5121,6 +5158,8 @@ snapshots:
   mkdirp@1.0.4: {}
 
   modify-values@1.0.1: {}
+
+  monaco-editor@0.52.2: {}
 
   mrmime@2.0.1: {}
 
