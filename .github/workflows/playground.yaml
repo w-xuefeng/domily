@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         node-version: [23.x]
+        bun-version: 1.2.13
 
     steps:
       - name: Checkout code
@@ -22,10 +23,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Setup Bun
+        uses: se/setup-bun@v1
+        with:
+          bun-version: ${{ matrix.bun-version }}
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         run: |
-          curl -fsSL https://bun.sh/install | bash
-          { ln -s $HOME/.bun/bin/bun /usr/bin } || { sudo ln -s $HOME/.bun/bin/bun /usr/bin }
           npm install pnpm@latest -g
           pnpm install
 
