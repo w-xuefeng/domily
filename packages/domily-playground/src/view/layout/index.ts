@@ -4,12 +4,11 @@ import Editor from "../editor";
 import Preview from "../preview";
 
 export default function Layout() {
-  const code = signal(`/**
+  const initialCode = `/**
  * Please keep this unique function declaration "App"
  * and only modify the code within the function body
  */
-function App(Domily) {
-  const { signal, render } = Domily;
+function App({ signal }) {
   const count = signal(0);
   const css = {
     ".domily-example": {
@@ -37,15 +36,15 @@ function App(Domily) {
       },
     },
   };
-  return render({
+  return {
     tag: "fragment",
     customElement: {
       enable: true,
       name: "domily-counter-example",
       useShadowDOM: true,
       shadowDOMMode: "open",
+      css,
     },
-    css,
     className: "domily-example",
     children: [
       {
@@ -60,8 +59,10 @@ function App(Domily) {
         text: () => "Count:" + count(),
       },
     ],
-  });
-}`);
+  };
+}`;
+
+  const code = signal(initialCode);
 
   const mainMounted = () => {
     document.querySelector("#global-loading")?.remove();
