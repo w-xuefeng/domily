@@ -20,21 +20,35 @@ function App({ signal }) {
       alignItems: "center",
       background: "#191919",
       color: "#ffffff",
+      ".logo": {
+        height: "100px",
+        animationName: "scale",
+        animationDuration: "2s",
+        animationPlayState: "running",
+        animationIterationCount: "infinite",
+        animationTimingFunction: "linear",
+        "&:hover": {
+          animationPlayState: "paused",
+        },
+      },
       button: {
         boxSizing: "border-box",
         cursor: "pointer",
         color: "#aac8e4",
         backgroundColor: "#2f2f2f",
-        background:
-          "linear-gradient(#2f2f2f, #2f2f2f) padding-box, linear-gradient(45deg, #fff500, #00e1ff) border-box",
+        background: "linear-gradient(#2f2f2f, #2f2f2f) padding-box, linear-gradient(45deg, #fff500, #00e1ff) border-box",
         border: "2px solid transparent",
         fontSize: "16px",
         padding: "8px 18px",
         fontWeight: 500,
         borderRadius: "8px",
-        transition: "background-color .5s, color .5s",
       },
     },
+    "@keyframes scale": {
+      "100%": {
+        transform: "scale(1.2)"
+      },
+    }
   };
   return {
     tag: "fragment",
@@ -47,6 +61,13 @@ function App({ signal }) {
     },
     className: "domily-example",
     children: [
+      {
+        tag: "img",
+        className: "logo",
+        props: {
+          src: "https://raw.githubusercontent.com/w-xuefeng/domily/main/assets/logo.webp"
+        }
+      },
       {
         tag: "button",
         text: "Increment",

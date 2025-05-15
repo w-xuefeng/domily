@@ -105,14 +105,12 @@ Alternatively, you can use the `UMD` version directly in your browser
             cursor: "pointer",
             color: "#aac8e4",
             backgroundColor: "#2f2f2f",
-            background:
-              "linear-gradient(#2f2f2f, #2f2f2f) padding-box, linear-gradient(45deg, #fff500, #00e1ff) border-box",
+            background: "linear-gradient(#2f2f2f, #2f2f2f) padding-box, linear-gradient(45deg, #fff500, #00e1ff) border-box",
             border: "2px solid transparent",
             fontSize: "16px",
             padding: "8px 18px",
             fontWeight: 500,
-            borderRadius: "8px",
-            transition: "background-color .5s, color .5s",
+            borderRadius: "8px"
           },
         },
       };

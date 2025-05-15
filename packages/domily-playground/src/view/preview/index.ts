@@ -1,9 +1,9 @@
 import * as Domily from "domily";
-import { cr, render } from "domily";
+import { computed, render } from "domily";
 import type { ISignalFunc } from "domily";
 
 export default function Preview(props: { code: ISignalFunc<string> }) {
-  const page = cr(() => {
+  const page = computed(() => {
     try {
       const getCode = new Function(
         "Domily",
@@ -76,6 +76,6 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
       },
     },
     className: "preview",
-    children: [page],
+    children: [page.value],
   });
 }
