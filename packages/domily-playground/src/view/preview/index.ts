@@ -36,7 +36,7 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
         backgroundImage: `url(${IconLoading})`,
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center center",
-        backgroundSize: "120px 120px",
+        backgroundSize: "96px",
       },
     },
     className: "preview",

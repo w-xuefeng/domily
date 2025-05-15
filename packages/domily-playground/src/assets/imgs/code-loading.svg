@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="80px" height="80px"
-  viewBox="0 0 140 140" preserveAspectRatio="xMidYMid"
+  viewBox="0 0 100 100" preserveAspectRatio="xMidYMid"
   style="animation-play-state: running; animation-delay: 0s; background: none;">
   <defs style="animation-play-state: running; animation-delay: 0s;">
     <filter id="gooey" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"
@@ -78,5 +78,4 @@
       </g>
     </g>
   </g>
-  <text x="50%" y="110" style="font-size: 20;stroke: #dddeee;transform:translateX(-50%)">Code Loading...</text>
 </svg>

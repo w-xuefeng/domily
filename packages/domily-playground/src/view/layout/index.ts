@@ -1,4 +1,4 @@
-import { signal } from "domily";
+import { signal, effect } from "domily";
 import Header from "../../components/header.d.md";
 import Editor from "../editor";
 import Preview from "../preview";
@@ -96,13 +96,31 @@ export default function Layout() {
 
   const code = signal(initialCode);
 
+  const getPreviewURL = () => {
+    const htmlFile = new Blob(
+      [`<head><meta charset="UTF-8" /></head>\n\n`, code()],
+      { type: "text/html" }
+    );
+    return URL.createObjectURL(htmlFile);
+  };
+
+  let url = "";
+  let win: Window | null = null;
   const openInNewWindow = () => {
-    const htmlFile = new Blob([code()], { type: "text/html" });
-    const url = URL.createObjectURL(htmlFile);
-    const win = window.open(url);
+    url = getPreviewURL();
+    win = window.open(url);
     win.onclose = () => {
       URL.revokeObjectURL(url);
+      win = null;
     };
+    effect(() => {
+      if (!win) {
+        return;
+      }
+      URL.revokeObjectURL(url);
+      url = getPreviewURL();
+      win.location.href = url;
+    });
   };
 
   const mainMounted = () => {
