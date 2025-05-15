@@ -21,6 +21,22 @@
       "children": [
         {
           "tag": "img",
+          "attrs": {
+            "width": "26px",
+            "height": "26px"
+          },
+          "style": {
+            "cursor": "pointer"
+          },
+          "props": {
+            "src": ":IconOpenNewWin"
+          },
+          "on": {
+            "click": "@props.openInNewWindow"
+          }
+        },
+        {
+          "tag": "img",
           "className": "theme-icon",
           "props": {
             "src": "@icon"
@@ -76,6 +92,7 @@ import IconSun from "@/assets/imgs/sun.svg";
 import IconMoon from "@/assets/imgs/moon.svg";
 import IconSystemDark from "@/assets/imgs/system-dark.svg";
 import IconSystemLight from "@/assets/imgs/system-light.svg";
+import IconOpenNewWin from "@/assets/imgs/open-new-win.svg";
 
 const autoThemeDetail = signal("light");
 

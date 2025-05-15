@@ -38,30 +38,11 @@ export default function Editor(props: { code: ISignalFunc<string> }) {
     }
     editor = monaco.editor.create(editorDOM, {
       value: props.code(),
-      language: "javascript",
+      language: "html",
       theme: editorInitialTheme.value,
       automaticLayout: true,
     });
 
-    const model = editor.getModel();
-    const readOnlyRange = new monaco.Range(1, 1, 5, model.getLineMaxColumn(5));
-
-    model.deltaDecorations(
-      [],
-      [
-        {
-          range: readOnlyRange,
-          options: {
-            isWholeLine: true,
-            className: "read-only-line",
-            hoverMessage: { value: "此行为只读区域" },
-            inlineClassName: "no-edit",
-            stickiness:
-              monaco.editor.TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges,
-          },
-        },
-      ]
-    );
     editor.getModel().onDidChangeContent(() => {
       clearTimeout(contentChangeTimer);
       contentChangeTimer = setTimeout(() => {

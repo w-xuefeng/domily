@@ -1,44 +1,23 @@
-import * as Domily from "domily";
-import { computed, render } from "domily";
+import { effect } from "domily";
 import type { ISignalFunc } from "domily";
+import IconLoading from "@/assets/imgs/code-loading.svg";
 
 export default function Preview(props: { code: ISignalFunc<string> }) {
-  const page = computed(() => {
-    try {
-      const getCode = new Function(
-        "Domily",
-        [
-          "try {",
-          `const renderFunction = ${props.code()}`,
-          `if(typeof renderFunction !== 'function') { throw TypeError('The code must be wrapped within a function scope')}`,
-          `return renderFunction(Domily);`,
-          "} catch {",
-          `throw TypeError('The code must be wrapped within a function scope')`,
-          "}",
-        ].join("\n")
-      );
-      return getCode(Domily);
-    } catch (error) {
-      return render({
-        tag: "div",
-        className: "error",
-        children: [
-          {
-            tag: "div",
-            className: "message",
-            text: `${error.name} ${error.message}`,
-          },
-          {
-            tag: "div",
-            className: "stack",
-            text: error.stack,
-          },
-        ],
-      });
-    }
-  });
-
-  return render({
+  let url = "";
+  const mounted = (dom: HTMLIFrameElement | null) => {
+    effect(() => {
+      if (!dom) {
+        return;
+      }
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+      const htmlFile = new Blob([props.code()], { type: "text/html" });
+      url = URL.createObjectURL(htmlFile);
+      dom.src = url;
+    });
+  };
+  return {
     tag: "section",
     customElement: {
       enable: true,
@@ -47,35 +26,29 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
       shadowDOMMode: "open",
     },
     css: {
-      ".preview": {
+      ".preview, .page-container": {
         width: "100%",
         height: "100%",
-        overflow: "auto",
-        ".error": {
-          color: "#f40",
-          border: "2px solid #ff2600",
-          width: "90%",
-          margin: "10px auto",
-          boxSizing: "border-box",
-          borderRadius: "2px",
-          backgroundColor: "#ff907c",
-          padding: "10px",
-          ".message": {
-            color: "#fff",
-            fontSize: "18px",
-            marginBlockEnd: "10px",
-          },
-          ".stack": {
-            paddingInlineStart: "40px",
-            boxSizing: "border-box",
-            color: "#fff",
-            fontSize: "14px",
-            whiteSpace: "pre-wrap",
-          },
-        },
+        boxSizing: "border-box",
+        overflow: "hidden",
+      },
+      ".page-container": {
+        backgroundImage: `url(${IconLoading})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center center",
+        backgroundSize: "120px 120px",
       },
     },
     className: "preview",
-    children: [page.value],
-  });
+    children: [
+      {
+        tag: "iframe",
+        className: "page-container",
+        attrs: {
+          frameborder: 0,
+        },
+        mounted,
+      },
+    ],
+  };
 }

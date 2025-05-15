@@ -4,17 +4,21 @@ import Editor from "../editor";
 import Preview from "../preview";
 
 export default function Layout() {
-  const initialCode = `/**
- * Please keep this unique function declaration "App"
- * and only modify the code within the function body
- */
-function App({ signal }) {
+  const initialCode = `<style>body{ margin: 0; }</style>
+
+<div id="app"></div>
+
+<script type="module">
+import { signal, render } from 'https://cdn.jsdelivr.net/npm/@domily/runtime-core/lib/index.esm.js';
+
+function App() {
   const count = signal(0);
   const css = {
     ".domily-example": {
       width: "100%",
       height: "100%",
       display: "flex",
+      gap: "10px",
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
@@ -81,9 +85,22 @@ function App({ signal }) {
       },
     ],
   };
-}`;
+}
+
+render(App()).mount("#app");
+</script>
+  `;
 
   const code = signal(initialCode);
+
+  const openInNewWindow = () => {
+    const htmlFile = new Blob([code()], { type: "text/html" });
+    const url = URL.createObjectURL(htmlFile);
+    const win = window.open(url);
+    win.onclose = () => {
+      URL.revokeObjectURL(url);
+    };
+  };
 
   const mainMounted = () => {
     document.querySelector("#global-loading")?.remove();
@@ -106,7 +123,9 @@ function App({ signal }) {
     },
     className: "layout",
     children: [
-      Header(),
+      Header({
+        openInNewWindow,
+      }),
       {
         tag: "main",
         className: "main-container",

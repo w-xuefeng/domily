@@ -7,9 +7,6 @@ export default defineConfig({
   plugins: [
     domily(),
     VitePWA({
-      // devOptions: {
-      //   enabled: true,
-      // },
       registerType: "autoUpdate",
       manifest: {
         name: "Domily Playground",
