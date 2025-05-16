@@ -6,8 +6,17 @@ import {
   type ModuleItem,
 } from "@swc/core";
 import type { VitePluginDomilyOptions } from "./utils";
+import { codeDataBinding } from "./data-bing";
 
 type Mode = "dev" | "build" | "unknown";
+
+interface ParseResult {
+  script: string;
+  json: string;
+  style: string;
+  ts: boolean;
+  cssPreprocessor: string;
+}
 
 function filterCode(
   code: string,
@@ -47,7 +56,7 @@ function JSC(ts: boolean) {
 function parse(code: string) {
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)\n```/g;
 
-  const result = {
+  const result: ParseResult = {
     script: "",
     json: "",
     style: "",
@@ -93,34 +102,12 @@ function parse(code: string) {
   return result;
 }
 
-function handleScript(code: {
-  script: string;
-  json: string;
-  style: string;
-  ts: boolean;
-  cssPreprocessor: string;
-}) {
-  code.json = code.json
-    .replaceAll(/"@(?<event>[\w.?]+\(?[\w,?]*\)?)"/g, (_, match) => {
-      return match;
-    })
-    .replaceAll(/":(?<bind>[\w.?]+\(?[\w,?]*\)?)"/g, (_, match) => {
-      return match;
-    });
-
+function handleScript(code: ParseResult) {
+  code.json = codeDataBinding(code.json);
   return code;
 }
 
-async function handleStyle(
-  code: {
-    script: string;
-    json: string;
-    style: string;
-    ts: boolean;
-    cssPreprocessor: string;
-  },
-  mode: Mode
-) {
+async function handleStyle(code: ParseResult, mode: Mode) {
   if (code.cssPreprocessor === "css") {
     return code;
   }
@@ -209,7 +196,7 @@ export async function transformDOMSingleFileComponentCode(
   );
   const template = handleTemplateStyle(json, style);
 
-  let codeText = await generateCodeText({
+  const codeText = await generateCodeText({
     name,
     script,
     template,
@@ -223,5 +210,6 @@ export async function transformDOMSingleFileComponentCode(
     minify: mode !== "dev",
     sourceMaps: mode === "dev",
   });
+
   return { code: result.code, map: result.map };
 }
