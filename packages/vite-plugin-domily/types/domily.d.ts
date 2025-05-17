@@ -1,4 +1,4 @@
-declare module "*.md" {
+declare module "*.d.md" {
   import {
     IDomilyRenderOptions,
     type WithBaseProps,
