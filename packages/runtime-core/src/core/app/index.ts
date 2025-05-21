@@ -1,4 +1,4 @@
-import { DomilyAppDefault } from "../../config";
+import { DomilyAppDefault, PROVIDER_KEY } from "../../config";
 import { $el } from "../../utils/dom";
 import { DOMilyChild, DOMilyMountableRender } from "../render";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
@@ -143,4 +143,55 @@ export function getCurrentInstance(
     return;
   }
   return DomilyAppInstances.get(namespace);
+}
+
+export function provide<K extends string | symbol, T>(
+  key: K,
+  data: T,
+  namespace?: string | symbol
+) {
+  const appInstance = getCurrentInstance(namespace);
+  if (!appInstance) {
+    console.warn(
+      `[Domily warn] No app instance found for namespace ${String(namespace)}.`
+    );
+    return;
+  }
+  const providers =
+    appInstance.globalProperties[PROVIDER_KEY] ||
+    new Map<string | symbol, any>();
+  if (providers.has(key)) {
+    console.warn(
+      `[Domily warn] Provider with key ${String(key)} already exists.`
+    );
+    return;
+  }
+  providers.set(key, data);
+  appInstance.globalProperties[PROVIDER_KEY] = providers;
+}
+
+export function inject<K extends string | symbol, T>(
+  key: K,
+  namespace?: string | symbol
+): T | undefined {
+  const appInstance = getCurrentInstance(namespace);
+  if (!appInstance) {
+    console.warn(
+      `[Domily warn] No app instance found for namespace ${String(namespace)}.`
+    );
+    return;
+  }
+  const providers = appInstance.globalProperties[PROVIDER_KEY];
+  if (!providers) {
+    console.warn(
+      `[Domily warn] No providers found for namespace ${String(namespace)}.`
+    );
+    return void 0;
+  }
+  const data = providers.get(key);
+  if (!data) {
+    console.warn(`[Domily warn] Provider with key ${String(key)} not found.`);
+    return void 0;
+  }
+  return data;
 }

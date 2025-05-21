@@ -13,7 +13,7 @@
     "dev": "bun ./scripts/set-runtime-core-version.ts dev",
     "build": "bun run scripts/build-script.ts && tsc -b ./tsconfig.json",
     "prepublishOnly": "npm version patch && bun run build && bun ./scripts/set-runtime-core-version.ts prod",
-    "release": "npm publish --access public"
+    "release": "npm publish --access public && bun dev"
   },
   "keywords": [
     "domily"
