@@ -6,9 +6,10 @@
   "module": "lib/index.esm.js",
   "types": "lib/types/index.d.ts",
   "scripts": {
+    "dev": "bun ./scripts/set-runtime-core-version.ts dev",
     "build": "bun scripts/build.ts && tsc -b ./tsconfig.types.json",
-    "prepublishOnly": "npm version patch && bun run build",
-    "release": "npm publish --access public",
+    "prepublishOnly": "npm version patch && bun run build && bun ./scripts/set-runtime-core-version.ts prod",
+    "release": "npm publish --access public && bun dev",
     "lint": "oxlint --config=../../.oxlintrc.json src --fix-suggestions"
   },
   "exports": {
