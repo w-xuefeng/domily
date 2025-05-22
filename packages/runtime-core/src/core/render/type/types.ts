@@ -7,6 +7,11 @@ export interface ISignalFunc<T> {
   (value: T): void;
 }
 
+export interface IReactiveFunc<T extends object> {
+  (): T;
+  (value: Partial<T>): void;
+}
+
 export type WithFuncType<T> = T | ((...args: any[]) => T) | ISignalFunc<T>;
 
 /**
