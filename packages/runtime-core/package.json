@@ -9,7 +9,8 @@
     "clean": "rimraf lib",
     "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c",
     "prepublishOnly": "npm version patch && bun run build",
-    "release": "npm publish --access public"
+    "release": "npm publish --access public",
+    "lint": "oxlint --config=../../.oxlintrc.json src --fix-suggestions"
   },
   "exports": {
     ".": {

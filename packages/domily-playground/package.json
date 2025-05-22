@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "lint": "oxlint --config=../../.oxlintrc.json src --fix-suggestions"
   },
   "keywords": [],
   "author": "",
