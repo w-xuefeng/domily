@@ -73,7 +73,7 @@ export default function Layout() {
           tag: "img",
           className: "logo",
           props: {
-            src: "https://raw.githubusercontent.com/w-xuefeng/domily/main/assets/logo.webp"
+            src: "https://raw.githubusercontent.com/domilyjs/domily/main/assets/logo.webp"
           }
         },
         {

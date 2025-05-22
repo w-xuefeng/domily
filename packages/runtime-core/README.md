@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://raw.githubusercontent.com/w-xuefeng/domily/refs/heads/main/assets/logo.webp" width="300">
+<img src="https://raw.githubusercontent.com/domilyjs/domily/refs/heads/main/assets/logo.webp" width="300">
 </p>
 
 
