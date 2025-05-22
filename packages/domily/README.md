@@ -4,7 +4,7 @@
 
 
 <p align="center">
-Rendering DOM with JSON
+a front end framework that DOM rendered by JSON
 </p>
 
 # domily

@@ -1,3 +1,3 @@
 # domily-playground
 
-[Playground](https://w-xuefeng.github.io/domily)
+[Playground](https://domilyjs.github.io/domily)
