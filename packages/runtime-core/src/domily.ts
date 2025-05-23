@@ -16,7 +16,7 @@ function builtinDomily() {
     render,
     registerElement<T extends string>(
       tag: T,
-      constructor?: CustomElementConstructor | undefined,
+      constructor?: CustomElementConstructor | undefined
     ) {
       return registerElement(Domily, tag, constructor);
     },
@@ -42,12 +42,16 @@ function builtinDomily() {
    * register fragment
    */
   Domily.registerElement(`fragment`);
+  /**
+   * register rich-text
+   */
+  Domily.registerElement(`rich-text`);
   return Domily as unknown as DOMily;
 }
 
 function registerCustomElements<T extends DOMily, P extends string[] | object>(
   Domily: T,
-  needRegisterCustomElements?: P,
+  needRegisterCustomElements?: P
 ) {
   if (!needRegisterCustomElements) {
     return Domily as OptionalWith<T, P, DOMily<CustomParamsToMap<P>>>;
@@ -79,7 +83,7 @@ function registerCustomElements<T extends DOMily, P extends string[] | object>(
 }
 
 export function createDomily<T extends string[] | object = {}>(
-  customElement?: T,
+  customElement?: T
 ) {
   return registerCustomElements(builtinDomily(), customElement);
 }
@@ -88,7 +92,7 @@ export const Domily = createDomily();
 
 export type DOMily<CustomTagNameMap = {}> = {
   [T in DOMilyTags<CustomTagNameMap>]: (
-    schema?: Omit<IDomilyRenderOptions<CustomTagNameMap, T>, "tag">,
+    schema?: Omit<IDomilyRenderOptions<CustomTagNameMap, T>, "tag">
   ) => DOMilyMountableRender<CustomTagNameMap, T>;
 } & DOMilyBase<CustomTagNameMap>;
 
@@ -97,7 +101,7 @@ export type DOMilyBase<CustomTagNameMap = {}> = {
   render: typeof render;
   registerElement<T extends string>(
     tag: T,
-    constructor?: CustomElementConstructor | undefined,
+    constructor?: CustomElementConstructor | undefined
   ): DOMily<
     typeof constructor extends new (...args: any) => infer R
       ? CustomTagNameMap & { [key in T]: R }

@@ -1,18 +1,7 @@
+import type { WithFuncType } from "../../reactive/type";
 import type DomilyFragment from "../custom-elements/fragment";
 import type DomilyRouterView from "../custom-elements/router-view";
 import type DomilyRenderSchema from "../schema";
-
-export interface ISignalFunc<T> {
-  (): T;
-  (value: T): void;
-}
-
-export interface IReactiveFunc<T extends object> {
-  (): T;
-  (value: Partial<T>): void;
-}
-
-export type WithFuncType<T> = T | ((...args: any[]) => T) | ISignalFunc<T>;
 
 /**
  * ==================== about tag ====================
@@ -22,6 +11,7 @@ export interface IExtraTagNameMap {
   comment: Comment;
   fragment: DomilyFragment;
   "router-view": DomilyRouterView;
+  "rich-text": HTMLElement;
 }
 
 export type TSvgElementTagNameMap = {

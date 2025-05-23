@@ -226,6 +226,13 @@ export function rv(children: DOMilyChildren = []) {
   return new RV(children);
 }
 
+export function rt(props: { html: string }) {
+  const template = document.createElement("template");
+  template.innerHTML = props.html;
+  const dom = document.importNode(template.content, true);
+  return dom.firstElementChild as HTMLElement;
+}
+
 export function c(data?: string | number | undefined) {
   if (typeof data === "undefined") {
     data = "";
@@ -322,6 +329,12 @@ export function internalCreateElement<P>(
         } else if (typeof v === "string") {
           Reflect.set(container.style, "cssText", v);
         }
+      } else if (k === "className") {
+        setDOMClassNames(
+          container as HTMLElement,
+          container.tagName,
+          v as string
+        );
       } else if (k !== "attrs" && k !== "on" && k !== "style") {
         Reflect.set(container, k, handleWithFunType(v));
         effect(() => {
@@ -348,6 +361,22 @@ export function isSvgTag<K extends keyof WithCustomElementTagNameMap>(
   return tagName === "svg" || tagName.startsWith("SVG:");
 }
 
+export function isSvgDOM(dom: HTMLElement | SVGAElement) {
+  return dom.dataset.domType === "svg" || dom.tagName === "svg";
+}
+
+export function setDOMClassNames(
+  dom: HTMLElement | SVGAElement,
+  tag: string,
+  classNames: string
+) {
+  if (isSvgTag(tag as keyof WithCustomElementTagNameMap) || isSvgDOM(dom)) {
+    Reflect.set(dom.className, "baseVal", classNames);
+  } else {
+    Reflect.set(dom, "className", classNames);
+  }
+}
+
 export function h<
   CustomTagNameMap,
   K extends keyof WithCustomElementTagNameMap<CustomTagNameMap>
@@ -371,7 +400,14 @@ export function h<
     return null;
   }
   const creator = isSvgTag(tagName)
-    ? () => document.createElementNS(svgNamespace, tagName.replace(/^SVG:/, ""))
+    ? () => {
+        const svgDOM = document.createElementNS(
+          svgNamespace,
+          tagName.replace(/^SVG:/, "")
+        );
+        svgDOM.setAttribute("data-dom-type", "svg");
+        return svgDOM;
+      }
     : () => document.createElement(tagName);
   return internalCreateElement(creator, properties, children);
 }
