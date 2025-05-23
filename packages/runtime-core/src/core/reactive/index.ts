@@ -9,14 +9,15 @@ export * from "./type";
 
 export function ref<T>(value: T): Ref<T> {
   const getter = signal(value);
-  return Object.assign(getter, {
-    get value() {
+  Reflect.defineProperty(getter, "value", {
+    get() {
       return getter();
     },
-    set value(newValue) {
+    set(newValue: T) {
       getter(newValue);
     },
   });
+  return getter as Ref<T>;
 }
 
 function normalComputed<T>(getter: (previousValue?: T) => T) {

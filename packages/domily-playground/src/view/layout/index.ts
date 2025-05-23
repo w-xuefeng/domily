@@ -13,10 +13,10 @@ export default function Layout() {
 <div id="app"></div>
 
 <script type="module">
-  import { signal, render } from 'https://cdn.jsdelivr.net/npm/@domily/runtime-core/lib/index.esm.js';
+  import { ref, render } from 'https://cdn.jsdelivr.net/npm/@domily/runtime-core/lib/index.esm.js';
 
   function App() {
-    const count = signal(0);
+    const count = ref(0);
     const css = {
       ".domily-example": {
         width: "100%",
@@ -80,12 +80,12 @@ export default function Layout() {
           tag: "button",
           text: "Increment",
           on: {
-            click: () => count(count() + 1),
+            click: () => count.value++,
           },
         },
         {
           tag: "p",
-          text: () => "Count:" + count(),
+          text: () => "Count:" + count.value,
         },
       ],
     };
