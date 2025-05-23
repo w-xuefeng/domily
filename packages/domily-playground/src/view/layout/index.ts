@@ -13,7 +13,7 @@ export default function Layout() {
 <div id="app"></div>
 
 <script type="module">
-  import { ref, render } from 'https://cdn.jsdelivr.net/npm/@domily/runtime-core/lib/index.esm.js';
+  import { ref, render } from 'https://cdn.jsdelivr.net/npm/@domily/runtime-core@latest/lib/index.esm.js';
 
   function App() {
     const count = ref(0);
