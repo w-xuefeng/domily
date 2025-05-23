@@ -1,19 +1,22 @@
 import { signal, computed as _computed } from "alien-signals";
 import { merge } from "../../utils/obj";
 import { createOverload } from "../../utils/overload";
+import type { IComputed, Reactive, Ref } from "./type";
 
 export { signal, effect } from "alien-signals";
 
-export function ref<T>(value: T) {
+export * from "./type";
+
+export function ref<T>(value: T): Ref<T> {
   const getter = signal(value);
-  return {
+  return Object.assign(getter, {
     get value() {
       return getter();
     },
     set value(newValue) {
       getter(newValue);
     },
-  };
+  });
 }
 
 function normalComputed<T>(getter: (previousValue?: T) => T) {
@@ -38,14 +41,7 @@ function withSetterComputed<T>(option: {
     },
   };
 }
-interface IComputed {
-  <T>(getter: (previousValue?: T) => T): {
-    readonly value: T;
-  };
-  <T>(option: { get: (previousValue?: T) => T; set: (newValue: T) => void }): {
-    value: T;
-  };
-}
+
 const computed = createOverload<IComputed>();
 computed.addImp("function", normalComputed as (params: Function) => any);
 computed.addImp("object", withSetterComputed as (params: object) => any);
@@ -56,7 +52,27 @@ export function reactive<T extends object>(initialValue: T) {
     const nextValue = merge<T>(value(), newValue);
     value(nextValue);
   };
-  return new Proxy(value, {
+  return new Proxy(value as Reactive<T>, {
+    get(target, p, receiver) {
+      const result = Reflect.get(target(), p, receiver);
+      return result;
+    },
+    set(_target, p, newValue) {
+      setter({ [p]: newValue } as Partial<T>);
+      return true;
+    },
+    deleteProperty(target, p) {
+      const nextValue = { ...target() };
+      Reflect.deleteProperty(nextValue, p);
+      value(nextValue);
+      return true;
+    },
+    defineProperty(target, p, attributes) {
+      const nextValue = { ...target() };
+      Reflect.defineProperty(nextValue, p, attributes);
+      value(nextValue);
+      return true;
+    },
     apply(target, thisArg, argArray) {
       if (argArray.length === 0) {
         return Reflect.apply(target, thisArg, argArray);

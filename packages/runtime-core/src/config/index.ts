@@ -5,3 +5,5 @@ export const DomilyAppDefault = {
 };
 
 export const PROVIDER_KEY = Symbol("provider");
+
+export const _IS_DEV_ = process.env.NODE_ENV !== "production";

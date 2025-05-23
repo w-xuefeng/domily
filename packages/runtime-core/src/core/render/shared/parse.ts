@@ -1,4 +1,4 @@
-import { effect } from "../../reactive";
+import { effect, type WithFuncType } from "../../reactive";
 import { mountable, txt } from "../../../utils/dom";
 import { isFunction, isObject } from "../../../utils/is";
 import { merge } from "../../../utils/obj";
@@ -10,7 +10,6 @@ import type {
   DOMilyMountableRender,
   IDomilyRenderOptions,
   ILifecycleItem,
-  WithFuncType,
 } from "../type/types";
 import { EventBus, EVENTS } from "../../../utils/event-bus";
 

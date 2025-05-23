@@ -1,6 +1,6 @@
 import { effect } from "alien-signals";
 import { isFunction } from "../../utils/is";
-import { WithFuncType } from "../render";
+import { WithFuncType } from "./type";
 
 export function handleWithFunType<T>(option: WithFuncType<T>) {
   return isFunction(option) ? option() : option;
@@ -10,9 +10,9 @@ export function handleFunTypeEffect<T>(
   option: WithFuncType<T>,
   handleEffect?: (newValue: T) => void
 ) {
-  if (isFunction(option) && isFunction(handleEffect)) {
+  if (isFunction(handleEffect)) {
     effect(() => {
-      handleEffect(option());
+      handleEffect(handleWithFunType(option));
     });
   }
 }

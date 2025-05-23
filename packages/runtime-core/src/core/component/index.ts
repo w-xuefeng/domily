@@ -1,8 +1,8 @@
+import type { WithFuncType } from "../reactive/type";
 import type {
   DOMilyCustomElementComponent,
   DOMilyMountableRender,
   IDomilyRenderOptions,
-  WithFuncType,
 } from "../render";
 import DomilyRenderSchema from "../render/schema";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";

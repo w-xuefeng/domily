@@ -1,10 +1,12 @@
-import { DomilyAppDefault, PROVIDER_KEY } from "../../config";
+import { _IS_DEV_, DomilyAppDefault, PROVIDER_KEY } from "../../config";
 import { $el } from "../../utils/dom";
 import { DOMilyChild, DOMilyMountableRender } from "../render";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 
 import { EventBus, EVENTS } from "../../utils/event-bus";
 import { isFunction } from "../../utils/is";
+import { handleWithFunType } from "../reactive/handle-effect";
+import { type WithFuncType } from "../reactive";
 
 export interface DOMilyObjectPlugin<Options = {}> extends Record<string, any> {
   install: (app: DomilyApp<any, any>, options?: Options) => void;
@@ -145,53 +147,69 @@ export function getCurrentInstance(
   return DomilyAppInstances.get(namespace);
 }
 
-export function provide<K extends string | symbol, T>(
+// eslint-disable-next-line no-unused-vars
+interface InjectionConstraint<T> {}
+export type InjectionKey<T> = symbol & InjectionConstraint<T>;
+
+export function provide<T, K = InjectionKey<T> | string | number>(
   key: K,
-  data: T,
+  data: K extends InjectionKey<infer V> ? V : T,
   namespace?: string | symbol
 ) {
   const appInstance = getCurrentInstance(namespace);
   if (!appInstance) {
-    console.warn(
-      `[Domily warn] No app instance found for namespace ${String(namespace)}.`
-    );
+    _IS_DEV_ &&
+      console.warn(
+        `[Domily warn] No app instance found for namespace ${String(
+          namespace
+        )}.`
+      );
     return;
   }
   const providers =
     appInstance.globalProperties[PROVIDER_KEY] ||
     new Map<string | symbol, any>();
   if (providers.has(key)) {
-    console.warn(
-      `[Domily warn] Provider with key ${String(key)} already exists.`
-    );
+    _IS_DEV_ &&
+      console.warn(
+        `[Domily warn] Provider with key ${String(key)} already exists.`
+      );
     return;
   }
   providers.set(key, data);
   appInstance.globalProperties[PROVIDER_KEY] = providers;
 }
 
-export function inject<K extends string | symbol, T>(
-  key: K,
+export function inject<T>(
+  key: InjectionKey<T> | string,
+  defaultValue?: WithFuncType<T>,
   namespace?: string | symbol
 ): T | undefined {
   const appInstance = getCurrentInstance(namespace);
+  const dv = handleWithFunType(defaultValue);
   if (!appInstance) {
-    console.warn(
-      `[Domily warn] No app instance found for namespace ${String(namespace)}.`
-    );
-    return;
+    _IS_DEV_ &&
+      console.warn(
+        `[Domily warn] No app instance found for namespace ${String(
+          namespace
+        )}.`
+      );
+    return dv;
   }
   const providers = appInstance.globalProperties[PROVIDER_KEY];
   if (!providers) {
-    console.warn(
-      `[Domily warn] No providers found for namespace ${String(namespace)}.`
-    );
-    return void 0;
+    _IS_DEV_ &&
+      console.warn(
+        `[Domily warn] No providers found for namespace ${String(namespace)}.`
+      );
+    return dv;
   }
   const data = providers.get(key);
   if (!data) {
-    console.warn(`[Domily warn] Provider with key ${String(key)} not found.`);
-    return void 0;
+    _IS_DEV_ &&
+      console.warn(`[Domily warn] Provider with key ${String(key)} not found.`);
+    return dv;
   }
+
   return data;
 }

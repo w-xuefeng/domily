@@ -11,7 +11,6 @@ import type {
   IDomilyRenderOptions,
   ILifecycleItem,
   TDomilyRenderProperties,
-  WithFuncType,
 } from "./type/types";
 import {
   c,
@@ -22,7 +21,9 @@ import {
   internalCreateElement,
   mountable,
   replaceDOM,
+  rt,
   rv,
+  setDOMClassNames,
   txt,
 } from "../../utils/dom";
 import { hasDiff, merge } from "../../utils/obj";
@@ -36,6 +37,7 @@ import {
   handleWithFunType,
   watchEffect,
 } from "../reactive/handle-effect";
+import type { WithFuncType } from "../reactive/type";
 
 export default class DomilyRenderSchema<
   CustomElementMap = {},
@@ -517,9 +519,9 @@ export default class DomilyRenderSchema<
                   return;
                 }
                 if (this.__dom) {
-                  Reflect.set(
+                  setDOMClassNames(
                     this.__dom as HTMLElement,
-                    "className",
+                    this.tag as string,
                     className
                   );
                 }
@@ -589,6 +591,12 @@ export default class DomilyRenderSchema<
     } else if (this.tag === DomilyRouterView.name) {
       this.__dom = this.domInterrupter(
         internalCreateElement(() => rv(children), props)
+      );
+    } else if (this.tag === "rich-text") {
+      const html = props.innerHTML;
+      delete props.innerHTML;
+      this.__dom = this.domInterrupter(
+        internalCreateElement(() => rt({ html }), props)
       );
     } else {
       this.__dom = this.domInterrupter(
