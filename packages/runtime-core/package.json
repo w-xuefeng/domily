@@ -7,7 +7,7 @@
   "types": "lib/types/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c",
+    "build": "bun clean && tsc -b ./tsconfig.types.json && rolldown -c && bun scripts/badge.ts",
     "prepublishOnly": "npm version patch && bun run build",
     "release": "npm publish --access public",
     "lint": "oxlint --config=../../.oxlintrc.json src --fix-suggestions"

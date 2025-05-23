@@ -24,6 +24,7 @@
     "rootDir": "./src",
   },
   "exclude": [
+    "scripts",
     "rolldown.config.ts",
     "test"
   ]
