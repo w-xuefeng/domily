@@ -153,7 +153,8 @@
     {
       "tag": "body"
     }
-  ]
+  ],
+  "mounted": "@mounted"
 }
 ```
 
@@ -164,6 +165,10 @@ const router = useRouter();
 const goHome = () => {
   router.replace("/");
 };
+
+const mounted = () => {
+  document.querySelector('#global-loading')?.remove()
+}
 ```
 
 ```css

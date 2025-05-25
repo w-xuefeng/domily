@@ -194,9 +194,10 @@ export interface IDomilyRenderOptions<
    * list-map
    */
   mapList?: {
-    list: ListData[];
+    list: WithFuncType<ListData[]>;
     map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
   };
+  key?: WithFuncType<string | number>;
 
   /**
    * custom element

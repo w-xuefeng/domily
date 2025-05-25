@@ -1,11 +1,12 @@
 import { _IS_DEV_, DomilyAppDefault, PROVIDER_KEY } from "../../config";
-import { $el } from "../../utils/dom";
+import { $el, camelToKebab, parseAttribute, replaceDOM } from "../../utils/dom";
 import { DOMilyChild, DOMilyMountableRender } from "../render";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 
 import { EventBus, EVENTS } from "../../utils/event-bus";
 import { isFunction } from "../../utils/is";
 import { handleWithFunType } from "../reactive/handle-effect";
+import { DOMilyComponent, parseComponent } from "../component";
 import { type WithFuncType } from "../reactive";
 
 export interface DOMilyObjectPlugin<Options = {}> extends Record<string, any> {
@@ -102,6 +103,94 @@ export default class DomilyApp<
 
   destroy() {
     DomilyAppInstances.delete(this.namespace);
+  }
+
+  defineCustomElement(
+    name: string,
+    component: DOMilyComponent,
+    customElementOptions?: {
+      useShadowDOM?: boolean;
+      shadowDOMMode?: "open" | "closed";
+      observedAttributes?: string[];
+    }
+  ) {
+    name = camelToKebab(name);
+    if (customElements.get(name)) {
+      _IS_DEV_ &&
+        console.warn(`[Domily warn] Custom element ${name} already exists.`);
+      return;
+    }
+    const namespace = this.namespace;
+    const {
+      useShadowDOM = false,
+      shadowDOMMode = "open",
+      observedAttributes: obAttrs = [],
+    } = customElementOptions || {};
+    customElements.define(
+      name,
+      class extends HTMLElement {
+        shadowRoot: ShadowRoot | null = null;
+        mountable: DOMilyMountableRender<any, any, any> | null = null;
+        static observedAttributes = obAttrs;
+        constructor() {
+          super();
+          if (useShadowDOM) {
+            this.shadowRoot = this.attachShadow({
+              mode: shadowDOMMode,
+            });
+          }
+        }
+        connectedCallback() {
+          const attrs = Object.fromEntries(
+            Array.from(this.attributes).map((e) => [
+              e.name,
+              parseAttribute(e.value),
+            ])
+          );
+          this.mountable = parseComponent(
+            {
+              namespace,
+              ...attrs,
+            },
+            component
+          );
+          if (!this.mountable) {
+            _IS_DEV_ &&
+              console.warn(
+                `[Domily warn] Custom element ${name} render failed.`
+              );
+            return;
+          }
+          const container =
+            useShadowDOM && this.shadowRoot ? this.shadowRoot : this;
+          this.mountable.mount(container);
+        }
+        disconnectedCallback() {
+          this.mountable?.unmount();
+        }
+        attributeChangedCallback() {
+          const attrs = Object.fromEntries(
+            Array.from(this.attributes).map((e) => [
+              e.name,
+              parseAttribute(e.value),
+            ])
+          );
+          const nextMountable = parseComponent(
+            {
+              namespace,
+              ...attrs,
+            },
+            component
+          );
+          if (this.mountable?.schema?.__dom && nextMountable) {
+            this.mountable.schema.__dom = replaceDOM(
+              this.mountable.schema.__dom,
+              nextMountable.schema.render()
+            );
+          }
+        }
+      }
+    );
   }
 }
 

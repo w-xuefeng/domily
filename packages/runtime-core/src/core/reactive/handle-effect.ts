@@ -3,13 +3,20 @@ import { isFunction } from "../../utils/is";
 import { WithFuncType } from "./type";
 
 export function handleWithFunType<T>(option: WithFuncType<T>) {
-  return isFunction(option) ? option() : option;
+  const value = isFunction(option) ? option() : option;
+  return typeof value === "object" && value !== null
+    ? structuredClone(value)
+    : value;
 }
 
 export function handleFunTypeEffect<T>(
   option: WithFuncType<T>,
-  handleEffect?: (newValue: T) => void
+  handleEffect?: (newValue: T) => void,
+  handled?: boolean
 ) {
+  if (handled) {
+    return;
+  }
   if (isFunction(handleEffect)) {
     effect(() => {
       handleEffect(handleWithFunType(option));
@@ -20,17 +27,22 @@ export function handleFunTypeEffect<T>(
 export function watchEffect<T>(
   option: WithFuncType<T>,
   handleEffect: (next: T, previous: T) => void,
+  handled: boolean = false,
   isEqual: (next: T, previous: T) => boolean = (a, b) => Object.is(a, b),
   update: (next: T, previous: T) => T = (next, _previous) => next
 ) {
   const result = { value: void 0 as T };
   result.value = handleWithFunType(option);
-  handleFunTypeEffect(option, (newValue) => {
-    if (isEqual(newValue, result.value)) {
-      return;
-    }
-    handleEffect(newValue, result.value);
-    result.value = update(newValue, result.value);
-  });
+  handleFunTypeEffect(
+    option,
+    (newValue) => {
+      if (isEqual(newValue, result.value)) {
+        return;
+      }
+      handleEffect(newValue, result.value);
+      result.value = update(newValue, result.value);
+    },
+    handled
+  );
   return result;
 }

@@ -20,6 +20,7 @@ import {
   handleHiddenStyle,
   internalCreateElement,
   mountable,
+  removeDOM,
   replaceDOM,
   rt,
   rv,
@@ -37,6 +38,7 @@ import {
   handleWithFunType,
   watchEffect,
 } from "../reactive/handle-effect";
+import { LIST_MAP_KEY_ATTR } from "../../config";
 import type { WithFuncType } from "../reactive/type";
 
 export default class DomilyRenderSchema<
@@ -86,9 +88,12 @@ export default class DomilyRenderSchema<
    * list-loop
    */
   mapList?: {
-    list: ListData[];
+    list: WithFuncType<ListData[]>;
     map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
   };
+  key?: WithFuncType<string | number>;
+  private mappedSchemaList: (DOMilyChild | DOMilyChildDOM)[] = [];
+  private mappedDOMList: Node[] = [];
 
   /**
    * custom element
@@ -111,6 +116,12 @@ export default class DomilyRenderSchema<
   mounted?: (dom: HTMLElement | Node | null) => void;
   unmounted?: () => void;
   private childLifeCycleQueue: ILifecycleItem[] = [];
+
+  /**
+   * internal status
+   */
+  private rendered = false;
+  private _internalReRenderFlag = false;
 
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
@@ -164,6 +175,7 @@ export default class DomilyRenderSchema<
      * list-loop
      */
     this.mapList = schema.mapList;
+    this.key = schema.key;
 
     /**
      * custom element
@@ -312,20 +324,24 @@ export default class DomilyRenderSchema<
 
     if (customElementCSS) {
       previousCSS = handleCSS(handleWithFunType(customElementCSS));
-      handleFunTypeEffect(customElementCSS, (css) => {
-        const nextStyle = handleCSS(css);
-        if (
-          previousCSS &&
-          nextStyle &&
-          previousCSS.innerText === nextStyle.innerText
-        ) {
-          return;
-        }
-        previousCSS = replaceDOM(
-          previousCSS,
-          nextStyle
-        ) as HTMLStyleElement | null;
-      });
+      handleFunTypeEffect(
+        customElementCSS,
+        (css) => {
+          const nextStyle = handleCSS(css);
+          if (
+            previousCSS &&
+            nextStyle &&
+            previousCSS.innerText === nextStyle.innerText
+          ) {
+            return;
+          }
+          previousCSS = replaceDOM(
+            previousCSS,
+            nextStyle
+          ) as HTMLStyleElement | null;
+        },
+        this.rendered
+      );
     }
     const CustomElementComponent = class extends HTMLElement {
       shadowRoot: ShadowRoot | null = null;
@@ -362,23 +378,124 @@ export default class DomilyRenderSchema<
     return new CEC(dom, previousCSS);
   }
 
-  domInterrupter(dom: HTMLElement | Node) {
-    return this.handleCustomElement(dom);
+  domWithKey(dom: HTMLElement | Node) {
+    let previousKey = handleWithFunType(this.key);
+    if (!previousKey || this._internalReRenderFlag) {
+      return dom;
+    }
+
+    Reflect.set(dom, LIST_MAP_KEY_ATTR, previousKey);
+
+    handleFunTypeEffect(
+      this.key,
+      (nextKey) => {
+        if (Object.is(previousKey, nextKey)) {
+          return;
+        }
+        if (!this.__dom) {
+          return;
+        }
+        const previousDOM = this.__dom;
+
+        /**
+         * Set internal flags to prevent duplication
+         */
+        this._internalReRenderFlag = true;
+        const nextDOM = this.render();
+        this._internalReRenderFlag = false;
+        this.__dom = replaceDOM(previousDOM, nextDOM);
+        if (this.__dom) {
+          Reflect.set(this.__dom, LIST_MAP_KEY_ATTR, nextKey);
+        }
+        previousKey = nextKey;
+      },
+      this.rendered
+    );
+
+    return dom;
+  }
+
+  domInterrupter(dom: HTMLElement | Node | null) {
+    if (!dom) {
+      this.rendered = true;
+      return dom;
+    }
+    const nextDOM = this.domWithKey(this.handleCustomElement(dom));
+    this.rendered = true;
+    return nextDOM;
+  }
+
+  updateDOMList(
+    map?: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM,
+    list?: ListData[] | null
+  ) {
+    if (!this.__dom) {
+      return;
+    }
+    this.mappedDOMList.forEach((keyNode) => {
+      removeDOM(keyNode);
+    });
+    this.mappedSchemaList = [];
+    this.mappedDOMList = [];
+    const nextMappedListFragment = document.createDocumentFragment();
+    if (Array.isArray(list) && isFunction(map)) {
+      for (let i = 0; i < list.length; i++) {
+        const child = map.apply(list, [list[i], i]);
+        this.mappedSchemaList.push(child);
+        const childDOM = domilyChildToDOM(child, this.childLifeCycleQueue);
+        if (childDOM) {
+          this.mappedDOMList.push(childDOM);
+          nextMappedListFragment.appendChild(childDOM);
+        }
+      }
+    }
+    this.__dom?.appendChild(nextMappedListFragment);
+  }
+
+  initialRenderStatus() {
+    this.childLifeCycleQueue = [];
+    this.mappedSchemaList = [];
+    this.mappedDOMList = [];
   }
 
   render(): HTMLElement | Node | null {
     /**
+     * ensure rendering status is initialization
+     */
+    this.initialRenderStatus();
+    /**
      * handle list-map
      */
     if (this.mapList) {
-      const { list, map } = this.mapList;
-      if (Array.isArray(list) && isFunction(map)) {
-        for (let i = 0; i < list.length; i++) {
-          const child = map.apply(list, [list[i], i]);
-          if (!this.children) {
-            this.children = [child];
+      let previousList = handleWithFunType(this.mapList.list);
+      handleFunTypeEffect(
+        this.mapList.list,
+        (nextList) => {
+          if (
+            !hasDiff(previousList, nextList, (k, lv, rv) => {
+              if (k === "key") {
+                return !Object.is(lv, rv);
+              }
+              return true;
+            })
+          ) {
+            return;
+          }
+          this.updateDOMList(this.mapList?.map, nextList);
+          previousList = nextList;
+        },
+        this.rendered
+      );
+      if (Array.isArray(previousList) && isFunction(this.mapList?.map)) {
+        for (let i = 0; i < previousList.length; i++) {
+          const child = this.mapList.map.apply(previousList, [
+            previousList[i],
+            i,
+          ]);
+          if (!this.mappedSchemaList) {
+            this.mappedSchemaList = [child];
           } else {
-            this.children.push(child);
+            this.mappedSchemaList.push(child);
           }
         }
       }
@@ -387,38 +504,53 @@ export default class DomilyRenderSchema<
     /**
      * handle dom-if
      */
-    watchEffect(this.domIf, (nextDomIf) => {
-      if (!nextDomIf) {
-        this.__dom = replaceDOM(this.__dom, c("dom-if"));
-      } else {
-        this.domIf = true;
-        this.__dom = replaceDOM(this.__dom, this.render());
-      }
-    });
+    watchEffect(
+      this.domIf,
+      (nextDomIf) => {
+        if (!nextDomIf) {
+          this.__dom = this.domInterrupter(replaceDOM(this.__dom, c("dom-if")));
+        } else {
+          this.domIf = true;
+          this.__dom = this.domInterrupter(
+            replaceDOM(this.__dom, this.render())
+          );
+        }
+      },
+      this.rendered
+    );
 
     /**
      * handle dom-show
      */
-    const previousDomShow = watchEffect(this.domShow, (nextDomShow) => {
-      if (this.__dom && "style" in this.__dom) {
-        this.__dom.style.cssText = handleHiddenStyle(
-          this.__dom.style.cssText,
-          !nextDomShow
-        ) as string;
-      }
-    });
+    const previousDomShow = watchEffect(
+      this.domShow,
+      (nextDomShow) => {
+        if (this.__dom && "style" in this.__dom) {
+          this.__dom.style.cssText = handleHiddenStyle(
+            this.__dom.style.cssText,
+            !nextDomShow
+          ) as string;
+        }
+      },
+      this.rendered
+    );
 
     /**
      * Text Node
      */
     if (this.tag === "text") {
-      const previousText = watchEffect(this.text, (text) => {
-        this.__dom = replaceDOM(
-          this.__dom,
-          txt(!previousDomShow.value ? void 0 : text)
-        );
-      });
-      this.__dom = txt(!previousDomShow.value ? void 0 : previousText.value);
+      const previousText = watchEffect(
+        this.text,
+        (text) => {
+          this.__dom = this.domInterrupter(
+            replaceDOM(this.__dom, txt(!previousDomShow.value ? void 0 : text))
+          );
+        },
+        this.rendered
+      );
+      this.__dom = this.domInterrupter(
+        txt(!previousDomShow.value ? void 0 : previousText.value)
+      );
       return this.__dom;
     }
 
@@ -426,51 +558,75 @@ export default class DomilyRenderSchema<
      * Comment Node
      */
     if (this.tag === "comment") {
-      const previousText = watchEffect(this.text, (text) => {
-        this.__dom = replaceDOM(
-          this.__dom,
-          c(!previousDomShow.value ? '"domily-comment-hidden"' : text)
-        );
-      });
-      this.__dom = c(previousText.value ?? "domily-comment");
+      const previousText = watchEffect(
+        this.text,
+        (text) => {
+          this.__dom = this.domInterrupter(
+            replaceDOM(
+              this.__dom,
+              c(!previousDomShow.value ? '"domily-comment-hidden"' : text)
+            )
+          );
+        },
+        this.rendered
+      );
+      this.__dom = this.domInterrupter(
+        c(previousText.value ?? "domily-comment")
+      );
       return this.__dom;
     }
 
     let previousCSS = handleCSS(handleWithFunType(this.css));
-    handleFunTypeEffect(this.css, (css) => {
-      const nextStyle = handleCSS(css);
-      if (
-        previousCSS &&
-        nextStyle &&
-        previousCSS.innerText === nextStyle.innerText
-      ) {
-        return;
-      }
-      previousCSS = replaceDOM(
-        previousCSS,
-        nextStyle
-      ) as HTMLStyleElement | null;
-    });
+    handleFunTypeEffect(
+      this.css,
+      (css) => {
+        const nextStyle = handleCSS(css);
+        if (
+          previousCSS &&
+          nextStyle &&
+          previousCSS.innerText === nextStyle.innerText
+        ) {
+          return;
+        }
+        previousCSS = replaceDOM(
+          previousCSS,
+          nextStyle
+        ) as HTMLStyleElement | null;
+      },
+      this.rendered
+    );
 
     let previousStyle = handleHiddenStyle(
       handleWithFunType(this.style),
       !previousDomShow
     );
-    handleFunTypeEffect(this.style, (style) => {
-      const nextStyle = handleHiddenStyle(style, !previousDomShow);
-      if (previousStyle === nextStyle) {
-        return;
-      }
-      if (this.__dom && "style" in this.__dom) {
-        this.__dom.style.cssText =
-          typeof nextStyle === "string" ? nextStyle : "";
-      }
-      previousStyle = nextStyle;
-    });
+    handleFunTypeEffect(
+      this.style,
+      (style) => {
+        const nextStyle = handleHiddenStyle(style, !previousDomShow);
+        if (previousStyle === nextStyle) {
+          return;
+        }
+        if (this.__dom && "style" in this.__dom) {
+          this.__dom.style.cssText =
+            typeof nextStyle === "string" ? nextStyle : "";
+        }
+        previousStyle = nextStyle;
+      },
+      this.rendered
+    );
 
-    const children = (this.children
+    let children = (this.children
       ?.map((child) => domilyChildToDOM(child, this.childLifeCycleQueue))
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
+
+    this.mappedDOMList = (this.mappedSchemaList
+      ?.map((child) => domilyChildToDOM(child, this.childLifeCycleQueue))
+      .filter((e) => !!e) || []) as (HTMLElement | Node)[];
+
+    if (this.mappedDOMList.length) {
+      children = children.concat(this.mappedDOMList);
+    }
 
     if (previousCSS) {
       children.unshift(previousCSS);
@@ -479,33 +635,41 @@ export default class DomilyRenderSchema<
     const props = {
       ...(() => {
         let previousProps = handleWithFunType(this.props);
-        handleFunTypeEffect(this.props, (nextProps) => {
-          if (!hasDiff(previousProps, nextProps)) {
-            return;
-          }
-          if (!this.__dom || !nextProps) {
-            return;
-          }
-          Object.keys(nextProps).forEach((k) => {
-            Reflect.set(this.__dom as HTMLElement, k, nextProps[k]);
-          });
-          previousProps = nextProps;
-        });
+        handleFunTypeEffect(
+          this.props,
+          (nextProps) => {
+            if (!hasDiff(previousProps, nextProps)) {
+              return;
+            }
+            if (!this.__dom || !nextProps) {
+              return;
+            }
+            Object.keys(nextProps).forEach((k) => {
+              Reflect.set(this.__dom as HTMLElement, k, nextProps[k]);
+            });
+            previousProps = nextProps;
+          },
+          this.rendered
+        );
         return previousProps;
       })(),
       ...(this.id
         ? {
             id: (() => {
               let previousId = handleWithFunType(this.id);
-              handleFunTypeEffect(this.id, (id) => {
-                if (id === previousId) {
-                  return;
-                }
-                if (this.__dom) {
-                  Reflect.set(this.__dom as HTMLElement, "id", id);
-                }
-                previousId = id;
-              });
+              handleFunTypeEffect(
+                this.id,
+                (id) => {
+                  if (id === previousId) {
+                    return;
+                  }
+                  if (this.__dom) {
+                    Reflect.set(this.__dom as HTMLElement, "id", id);
+                  }
+                  previousId = id;
+                },
+                this.rendered
+              );
               return previousId;
             })(),
           }
@@ -514,19 +678,23 @@ export default class DomilyRenderSchema<
         ? {
             className: (() => {
               let previousClassName = handleWithFunType(this.className);
-              handleFunTypeEffect(this.className, (className) => {
-                if (className === previousClassName) {
-                  return;
-                }
-                if (this.__dom) {
-                  setDOMClassNames(
-                    this.__dom as HTMLElement,
-                    this.tag as string,
-                    className
-                  );
-                }
-                previousClassName = className;
-              });
+              handleFunTypeEffect(
+                this.className,
+                (className) => {
+                  if (className === previousClassName) {
+                    return;
+                  }
+                  if (this.__dom) {
+                    setDOMClassNames(
+                      this.__dom as HTMLElement,
+                      this.tag as string,
+                      className
+                    );
+                  }
+                  previousClassName = className;
+                },
+                this.rendered
+              );
               return previousClassName;
             })(),
           }
@@ -535,15 +703,19 @@ export default class DomilyRenderSchema<
         ? {
             innerHTML: (() => {
               let previousHTML = handleWithFunType(this.html);
-              handleFunTypeEffect(this.html, (html) => {
-                if (html === previousHTML) {
-                  return;
-                }
-                if (this.__dom) {
-                  Reflect.set(this.__dom as HTMLElement, "innerHTML", html);
-                }
-                previousHTML = html;
-              });
+              handleFunTypeEffect(
+                this.html,
+                (html) => {
+                  if (html === previousHTML) {
+                    return;
+                  }
+                  if (this.__dom) {
+                    Reflect.set(this.__dom as HTMLElement, "innerHTML", html);
+                  }
+                  previousHTML = html;
+                },
+                this.rendered
+              );
               return previousHTML;
             })(),
           }
@@ -551,33 +723,41 @@ export default class DomilyRenderSchema<
         ? {
             innerText: (() => {
               let previousText = handleWithFunType(this.text);
-              handleFunTypeEffect(this.text, (text) => {
-                if (text === previousText) {
-                  return;
-                }
-                if (this.__dom) {
-                  Reflect.set(this.__dom as HTMLElement, "innerText", text);
-                }
-                previousText = text;
-              });
+              handleFunTypeEffect(
+                this.text,
+                (text) => {
+                  if (text === previousText) {
+                    return;
+                  }
+                  if (this.__dom) {
+                    Reflect.set(this.__dom as HTMLElement, "innerText", text);
+                  }
+                  previousText = text;
+                },
+                this.rendered
+              );
               return previousText;
             })(),
           }
         : {}),
       attrs: (() => {
         let previousAttrs = handleWithFunType(this.attrs);
-        handleFunTypeEffect(this.attrs, (nextAttrs) => {
-          if (!hasDiff(previousAttrs, nextAttrs)) {
-            return;
-          }
-          if (!this.__dom || !nextAttrs) {
-            return;
-          }
-          Object.keys(nextAttrs).forEach((k) => {
-            (this.__dom as HTMLElement).setAttribute(k, nextAttrs[k]);
-          });
-          previousAttrs = nextAttrs;
-        });
+        handleFunTypeEffect(
+          this.attrs,
+          (nextAttrs) => {
+            if (!hasDiff(previousAttrs, nextAttrs)) {
+              return;
+            }
+            if (!this.__dom || !nextAttrs) {
+              return;
+            }
+            Object.keys(nextAttrs).forEach((k) => {
+              (this.__dom as HTMLElement).setAttribute(k, nextAttrs[k]);
+            });
+            previousAttrs = nextAttrs;
+          },
+          this.rendered
+        );
         return previousAttrs;
       })(),
       style: previousStyle,

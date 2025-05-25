@@ -26,6 +26,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        disableDevLogs: true,
         maximumFileSizeToCacheInBytes: 8 * 1024 ** 2,
         runtimeCaching: [
           {

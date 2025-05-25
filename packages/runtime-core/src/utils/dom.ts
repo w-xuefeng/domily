@@ -208,6 +208,33 @@ export function camelToKebab(str: string): string {
     .replace(/^-/, "");
 }
 
+export function KebabToCamel(str: string): string {
+  return str
+    .split("-")
+    .filter((word) => word)
+    .map((word, index) =>
+      index === 0
+        ? word.toLowerCase()
+        : word[0].toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join("");
+}
+
+export function parseAttribute(attr: string) {
+  if (attr === "null") return null;
+  if (attr === "'null'" || attr === '"null"') return "null";
+  if (attr === "undefined") return undefined;
+  if (attr === "'undefined'" || attr === '"undefined"') return "undefined";
+  if (attr === "true") return true;
+  if (attr === "'true'" || attr === '"true"') return "true";
+  if (attr === "false") return false;
+  if (attr === "'false'" || attr === '"false"') return "false";
+  if (/^\d+$/.test(attr)) {
+    return Number(attr);
+  }
+  return attr;
+}
+
 export function f(children: DOMilyChildren = []) {
   const F = customElements.get(DomilyFragment.name);
   if (!F) {
