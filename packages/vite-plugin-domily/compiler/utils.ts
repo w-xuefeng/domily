@@ -6,6 +6,9 @@ export interface VitePluginDomilyOptions {
 }
 
 export function merge<T>(a: any, b: any): T {
+  if (Object.is(a, b)) {
+    return b;
+  }
   if (
     typeof a === "object" &&
     typeof b === "object" &&

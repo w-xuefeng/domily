@@ -1,6 +1,6 @@
 import { signal, computed as _computed } from "alien-signals";
-import { merge } from "../../utils/obj";
 import { createOverload } from "../../utils/overload";
+import { proxyObject } from "./utils";
 import type { IComputed, Reactive, Ref } from "./type";
 
 export { signal, effect } from "alien-signals";
@@ -8,16 +8,19 @@ export { signal, effect } from "alien-signals";
 export * from "./type";
 
 export function ref<T>(value: T): Ref<T> {
-  const getter = signal(value);
-  Reflect.defineProperty(getter, "value", {
+  const signalValue = signal(value);
+  Reflect.defineProperty(signalValue, "value", {
     get() {
-      return getter();
+      const rs = signalValue();
+      return typeof rs === "object" && rs !== null
+        ? proxyObject(rs, signalValue)
+        : rs;
     },
     set(newValue: T) {
-      getter(newValue);
+      signalValue(newValue);
     },
   });
-  return getter as Ref<T>;
+  return signalValue as Ref<T>;
 }
 
 function normalComputed<T>(getter: (previousValue?: T) => T) {
@@ -50,13 +53,22 @@ computed.addImp("object", withSetterComputed as (params: object) => any);
 export function reactive<T extends object>(initialValue: T) {
   const value = signal<T>(initialValue);
   const setter = (newValue: Partial<T>) => {
-    const nextValue = merge<T>(value(), newValue);
+    const nextValue = (
+      Array.isArray(newValue)
+        ? newValue
+        : {
+            ...value(),
+            ...newValue,
+          }
+    ) as T;
     value(nextValue);
   };
   return new Proxy(value as Reactive<T>, {
     get(target, p, receiver) {
-      const result = Reflect.get(target(), p, receiver);
-      return result;
+      const rs = Reflect.get(target(), p, receiver);
+      return typeof rs === "object" && rs !== null
+        ? proxyObject(rs, (data) => setter({ [p]: data } as Partial<T>))
+        : rs;
     },
     set(_target, p, newValue) {
       setter({ [p]: newValue } as Partial<T>);

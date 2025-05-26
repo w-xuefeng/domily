@@ -1,8 +1,10 @@
-import { reactive, ref } from "domily";
+import { reactive } from "domily";
 
 export default function MapList() {
-  const data = ref<string[]>([]);
-  const key = ref(0);
+  const state = reactive<{ data: string[]; key: number }>({
+    data: [],
+    key: 0,
+  });
   const mounted = () => {
     document.querySelector("#global-loading")?.remove();
   };
@@ -18,12 +20,13 @@ export default function MapList() {
   const getData = async () => {
     const rs = await fetch("https://api.pearktrue.cn/api/countdownday/");
     const json = await rs.json();
-    data.value = json.data;
+    state.data = json.data;
+    console.log("data", state.data);
     style.color = "red";
   };
 
   return {
-    key: () => `container-${key.value}`,
+    key: () => `container-${state.key}`,
     tag: "ul",
     className: "test-page",
     mounted,
@@ -45,8 +48,7 @@ export default function MapList() {
         style: "cursor: pointer",
         on: {
           click: () => {
-            data.value.shift();
-            data.value = [...data.value];
+            state.data.shift();
           },
         },
       },
@@ -56,10 +58,9 @@ export default function MapList() {
         style: "cursor: pointer",
         on: {
           click: () => {
-            data.value.unshift(
+            state.data.unshift(
               (Math.random() * 5000).toFixed(0) + "-" + Date.now()
             );
-            data.value = [...data.value];
           },
         },
       },
@@ -69,8 +70,7 @@ export default function MapList() {
         style: "cursor: pointer",
         on: {
           click: () => {
-            data.value.pop();
-            data.value = [...data.value];
+            state.data.pop();
           },
         },
       },
@@ -80,21 +80,20 @@ export default function MapList() {
         style: "cursor: pointer",
         on: {
           click: () => {
-            data.value.push(
+            state.data.push(
               (Math.random() * 5000).toFixed(0) + "-" + Date.now()
             );
-            data.value = [...data.value];
           },
         },
       },
       {
         tag: "button",
-        text: () => `change Key: ${key.value}`,
+        text: () => `change Key: ${state.key}`,
         style: "cursor: pointer",
         on: {
           click: () => {
             nonReactiveObjStyle.color = "#ff00f3";
-            key.value++;
+            state.key++;
           },
         },
       },
@@ -105,7 +104,7 @@ export default function MapList() {
       },
     ],
     mapList: {
-      list: () => data.value,
+      list: () => state.data,
       map: (item: string, index: number) => {
         return {
           tag: "li",

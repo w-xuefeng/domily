@@ -1,12 +1,11 @@
 import { effect } from "alien-signals";
 import { isFunction } from "../../utils/is";
+import { deepClone } from "../../utils/obj";
 import { WithFuncType } from "./type";
 
 export function handleWithFunType<T>(option: WithFuncType<T>) {
   const value = isFunction(option) ? option() : option;
-  return typeof value === "object" && value !== null
-    ? structuredClone(value)
-    : value;
+  return typeof value === "object" && value !== null ? deepClone(value) : value;
 }
 
 export function handleFunTypeEffect<T>(

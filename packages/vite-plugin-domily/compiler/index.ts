@@ -67,6 +67,7 @@ function parse(code: string) {
   let match: RegExpExecArray | null = null;
 
   while ((match = codeBlockRegex.exec(code)) !== null) {
+    // eslint-disable-next-line no-unused-vars
     const [_, lang, content] = match;
     const langLowerCase = lang.toLowerCase();
     switch (langLowerCase) {

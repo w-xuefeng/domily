@@ -1,4 +1,8 @@
 export function merge<T>(a: any, b: any): T {
+  if (Object.is(a, b) || !hasDiff(a, b)) {
+    return b;
+  }
+
   if (
     typeof a === "object" &&
     typeof b === "object" &&
@@ -9,9 +13,9 @@ export function merge<T>(a: any, b: any): T {
       return [...a, ...b] as T;
     }
 
-    return Object.keys(a).reduce(
+    return Reflect.ownKeys(a).reduce(
       (t, ck) => {
-        t[ck] = merge(t[ck], merge(a[ck], b[ck]));
+        t[ck] = merge(a[ck], b[ck]);
         return t;
       },
       { ...a, ...b }
@@ -101,3 +105,26 @@ export const hasDiff = (
 
   return !Object.is(left, right);
 };
+
+export function deepClone<T extends object>(value?: T) {
+  const cached = new WeakMap();
+  function _clone<V extends object>(value?: V): V {
+    if (value === null || typeof value !== "object") {
+      return value as unknown as V;
+    }
+    if (cached.has(value)) {
+      return cached.get(value);
+    }
+    const _constructor = value.constructor;
+    // @ts-ignore
+    const res = new _constructor(_constructor === Object ? void 0 : value);
+    cached.set(value, res);
+    const keys = Reflect.ownKeys(value);
+    for (const key of keys) {
+      // @ts-ignore
+      res[key] = _clone(value[key]);
+    }
+    return res;
+  }
+  return _clone(value);
+}
