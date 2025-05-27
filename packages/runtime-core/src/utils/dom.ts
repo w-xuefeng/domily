@@ -8,8 +8,10 @@ import type {
 } from "../core/render/type/types";
 import DomilyFragment from "../core/render/custom-elements/fragment";
 import DomilyRouterView from "../core/render/custom-elements/router-view";
-import { handleWithFunType } from "../core/reactive/handle-effect";
-import { effect } from "alien-signals";
+import {
+  handleWithFunType,
+  stoppableEffect,
+} from "../core/reactive/handle-effect";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
@@ -301,7 +303,8 @@ export function internalCreateElement<P>(
     | string
     | Element
     | HTMLElement
-    | Node
+    | Node,
+  gatherEffectAborts?: (() => void)[]
 ) {
   const container = creatorElement();
   if (properties) {
@@ -309,7 +312,7 @@ export function internalCreateElement<P>(
       if (k === "attrs" && typeof v === "object" && v !== null) {
         Object.entries(v as Record<string, string>).forEach(([ak, av]) => {
           container.setAttribute(ak, handleWithFunType(av));
-          effect(() => {
+          const stopEffect = stoppableEffect(() => {
             const next = handleWithFunType(av);
             if (typeof next === "undefined") {
               container.removeAttribute(ak);
@@ -317,6 +320,9 @@ export function internalCreateElement<P>(
               container.setAttribute(ak, next);
             }
           });
+          if (Array.isArray(gatherEffectAborts)) {
+            gatherEffectAborts.push(stopEffect);
+          }
         });
       } else if (k === "on" && typeof v === "object" && v !== null) {
         Object.entries(
@@ -364,9 +370,12 @@ export function internalCreateElement<P>(
         );
       } else if (k !== "attrs" && k !== "on" && k !== "style") {
         Reflect.set(container, k, handleWithFunType(v));
-        effect(() => {
+        const stopEffect = stoppableEffect(() => {
           Reflect.set(container, k, handleWithFunType(v));
         });
+        if (Array.isArray(gatherEffectAborts)) {
+          gatherEffectAborts.push(stopEffect);
+        }
       }
     });
   }
@@ -410,7 +419,8 @@ export function h<
 >(
   tagName: K,
   properties?: TDomilyRenderProperties<CustomTagNameMap, K> | null,
-  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node,
+  gatherEffectAborts?: (() => void)[]
 ): WithCustomElementTagNameMap<CustomTagNameMap>[K];
 
 export function h<
@@ -421,7 +431,8 @@ export function h<
     TSvgElementTagNameMap & HTMLElementTagNameMap,
     K
   > | null,
-  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node
+  children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node,
+  gatherEffectAborts?: (() => void)[]
 ) {
   if (typeof tagName !== "string") {
     return null;
@@ -436,7 +447,12 @@ export function h<
         return svgDOM;
       }
     : () => document.createElement(tagName);
-  return internalCreateElement(creator, properties, children);
+  return internalCreateElement(
+    creator,
+    properties,
+    children,
+    gatherEffectAborts
+  );
 }
 
 export function handleHiddenStyle(

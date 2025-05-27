@@ -120,8 +120,7 @@ export default class DomilyRenderSchema<
   /**
    * internal status
    */
-  private rendered = false;
-  private _internalReRenderFlag = false;
+  private _internalEffectAborts: (() => void)[] = [];
 
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
@@ -340,7 +339,7 @@ export default class DomilyRenderSchema<
             nextStyle
           ) as HTMLStyleElement | null;
         },
-        this.rendered
+        this._internalEffectAborts
       );
     }
     const CustomElementComponent = class extends HTMLElement {
@@ -380,36 +379,29 @@ export default class DomilyRenderSchema<
 
   domWithKey(dom: HTMLElement | Node) {
     let previousKey = handleWithFunType(this.key);
-    if (!previousKey || this._internalReRenderFlag) {
+    if (!previousKey) {
       return dom;
     }
 
     Reflect.set(dom, LIST_MAP_KEY_ATTR, previousKey);
-
     handleFunTypeEffect(
       this.key,
       (nextKey) => {
         if (Object.is(previousKey, nextKey)) {
           return;
         }
-        if (!this.__dom) {
+        if (!this.__dom || !handleWithFunType(this.domIf)) {
           return;
         }
         const previousDOM = this.__dom;
-
-        /**
-         * Set internal flags to prevent duplication
-         */
-        this._internalReRenderFlag = true;
         const nextDOM = this.render();
-        this._internalReRenderFlag = false;
         this.__dom = replaceDOM(previousDOM, nextDOM);
         if (this.__dom) {
           Reflect.set(this.__dom, LIST_MAP_KEY_ATTR, nextKey);
         }
         previousKey = nextKey;
       },
-      this.rendered
+      this._internalEffectAborts
     );
 
     return dom;
@@ -417,11 +409,9 @@ export default class DomilyRenderSchema<
 
   domInterrupter(dom: HTMLElement | Node | null) {
     if (!dom) {
-      this.rendered = true;
       return dom;
     }
     const nextDOM = this.domWithKey(this.handleCustomElement(dom));
-    this.rendered = true;
     return nextDOM;
   }
 
@@ -429,7 +419,7 @@ export default class DomilyRenderSchema<
     map?: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM,
     list?: ListData[] | null
   ) {
-    if (!this.__dom) {
+    if (!this.__dom || !handleWithFunType(this.domIf)) {
       return;
     }
     this.mappedDOMList.forEach((keyNode) => {
@@ -442,7 +432,11 @@ export default class DomilyRenderSchema<
       for (let i = 0; i < list.length; i++) {
         const child = map.apply(list, [list[i], i]);
         this.mappedSchemaList.push(child);
-        const childDOM = domilyChildToDOM(child, this.childLifeCycleQueue);
+        const childDOM = domilyChildToDOM(
+          child,
+          this.childLifeCycleQueue,
+          this._internalEffectAborts
+        );
         if (childDOM) {
           this.mappedDOMList.push(childDOM);
           nextMappedListFragment.appendChild(childDOM);
@@ -452,10 +446,18 @@ export default class DomilyRenderSchema<
     this.__dom?.appendChild(nextMappedListFragment);
   }
 
+  abortEffect() {
+    for (const abort of this._internalEffectAborts) {
+      isFunction(abort) && abort();
+    }
+    this._internalEffectAborts = [];
+  }
+
   initialRenderStatus() {
     this.childLifeCycleQueue = [];
     this.mappedSchemaList = [];
     this.mappedDOMList = [];
+    this.abortEffect();
   }
 
   render(): HTMLElement | Node | null {
@@ -484,7 +486,7 @@ export default class DomilyRenderSchema<
           this.updateDOMList(this.mapList?.map, nextList);
           previousList = nextList;
         },
-        this.rendered
+        this._internalEffectAborts
       );
       if (Array.isArray(previousList) && isFunction(this.mapList?.map)) {
         for (let i = 0; i < previousList.length; i++) {
@@ -504,20 +506,28 @@ export default class DomilyRenderSchema<
     /**
      * handle dom-if
      */
-    watchEffect(
+    let previousDomIf = handleWithFunType(this.domIf);
+    handleFunTypeEffect(
       this.domIf,
       (nextDomIf) => {
+        if (previousDomIf === nextDomIf) {
+          return;
+        }
         if (!nextDomIf) {
           this.__dom = this.domInterrupter(replaceDOM(this.__dom, c("dom-if")));
         } else {
-          this.domIf = true;
-          this.__dom = this.domInterrupter(
-            replaceDOM(this.__dom, this.render())
-          );
+          const originalDom = this.__dom;
+          const nextDom = this.render();
+          this.__dom = replaceDOM(originalDom, nextDom);
         }
+        previousDomIf = nextDomIf;
       },
-      this.rendered
+      this._internalEffectAborts
     );
+    if (!previousDomIf) {
+      this.__dom = this.domInterrupter(c("dom-if"));
+      return this.__dom;
+    }
 
     /**
      * handle dom-show
@@ -532,7 +542,7 @@ export default class DomilyRenderSchema<
           ) as string;
         }
       },
-      this.rendered
+      this._internalEffectAborts
     );
 
     /**
@@ -546,7 +556,7 @@ export default class DomilyRenderSchema<
             replaceDOM(this.__dom, txt(!previousDomShow.value ? void 0 : text))
           );
         },
-        this.rendered
+        this._internalEffectAborts
       );
       this.__dom = this.domInterrupter(
         txt(!previousDomShow.value ? void 0 : previousText.value)
@@ -568,7 +578,7 @@ export default class DomilyRenderSchema<
             )
           );
         },
-        this.rendered
+        this._internalEffectAborts
       );
       this.__dom = this.domInterrupter(
         c(previousText.value ?? "domily-comment")
@@ -593,17 +603,17 @@ export default class DomilyRenderSchema<
           nextStyle
         ) as HTMLStyleElement | null;
       },
-      this.rendered
+      this._internalEffectAborts
     );
 
     let previousStyle = handleHiddenStyle(
       handleWithFunType(this.style),
-      !previousDomShow
+      !previousDomShow.value
     );
     handleFunTypeEffect(
       this.style,
       (style) => {
-        const nextStyle = handleHiddenStyle(style, !previousDomShow);
+        const nextStyle = handleHiddenStyle(style, !previousDomShow.value);
         if (previousStyle === nextStyle) {
           return;
         }
@@ -613,15 +623,27 @@ export default class DomilyRenderSchema<
         }
         previousStyle = nextStyle;
       },
-      this.rendered
+      this._internalEffectAborts
     );
 
     let children = (this.children
-      ?.map((child) => domilyChildToDOM(child, this.childLifeCycleQueue))
+      ?.map((child) =>
+        domilyChildToDOM(
+          child,
+          this.childLifeCycleQueue,
+          this._internalEffectAborts
+        )
+      )
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
 
     this.mappedDOMList = (this.mappedSchemaList
-      ?.map((child) => domilyChildToDOM(child, this.childLifeCycleQueue))
+      ?.map((child) =>
+        domilyChildToDOM(
+          child,
+          this.childLifeCycleQueue,
+          this._internalEffectAborts
+        )
+      )
       .filter((e) => !!e) || []) as (HTMLElement | Node)[];
 
     if (this.mappedDOMList.length) {
@@ -649,7 +671,7 @@ export default class DomilyRenderSchema<
             });
             previousProps = nextProps;
           },
-          this.rendered
+          this._internalEffectAborts
         );
         return previousProps;
       })(),
@@ -668,7 +690,7 @@ export default class DomilyRenderSchema<
                   }
                   previousId = id;
                 },
-                this.rendered
+                this._internalEffectAborts
               );
               return previousId;
             })(),
@@ -693,7 +715,7 @@ export default class DomilyRenderSchema<
                   }
                   previousClassName = className;
                 },
-                this.rendered
+                this._internalEffectAborts
               );
               return previousClassName;
             })(),
@@ -714,7 +736,7 @@ export default class DomilyRenderSchema<
                   }
                   previousHTML = html;
                 },
-                this.rendered
+                this._internalEffectAborts
               );
               return previousHTML;
             })(),
@@ -734,7 +756,7 @@ export default class DomilyRenderSchema<
                   }
                   previousText = text;
                 },
-                this.rendered
+                this._internalEffectAborts
               );
               return previousText;
             })(),
@@ -756,7 +778,7 @@ export default class DomilyRenderSchema<
             });
             previousAttrs = nextAttrs;
           },
-          this.rendered
+          this._internalEffectAborts
         );
         return previousAttrs;
       })(),
@@ -766,21 +788,41 @@ export default class DomilyRenderSchema<
 
     if ([DomilyFragment.name, "fragment"].includes(this.tag as string)) {
       this.__dom = this.domInterrupter(
-        internalCreateElement(() => f(children), props)
+        internalCreateElement(
+          () => f(children),
+          props,
+          void 0,
+          this._internalEffectAborts
+        )
       );
     } else if (this.tag === DomilyRouterView.name) {
       this.__dom = this.domInterrupter(
-        internalCreateElement(() => rv(children), props)
+        internalCreateElement(
+          () => rv(children),
+          props,
+          void 0,
+          this._internalEffectAborts
+        )
       );
     } else if (this.tag === "rich-text") {
       const html = props.innerHTML;
       delete props.innerHTML;
       this.__dom = this.domInterrupter(
-        internalCreateElement(() => rt({ html }), props)
+        internalCreateElement(
+          () => rt({ html }),
+          props,
+          void 0,
+          this._internalEffectAborts
+        )
       );
     } else {
       this.__dom = this.domInterrupter(
-        h<CustomElementMap, K>(this.tag, props, children) as HTMLElement
+        h<CustomElementMap, K>(
+          this.tag,
+          props,
+          children,
+          this._internalEffectAborts
+        ) as HTMLElement
       );
     }
     return this.__dom;

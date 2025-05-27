@@ -1,4 +1,4 @@
-import { effect } from "alien-signals";
+import { effect, effectScope } from "alien-signals";
 import { isFunction } from "../../utils/is";
 import { deepClone } from "../../utils/obj";
 import { WithFuncType } from "./type";
@@ -8,25 +8,36 @@ export function handleWithFunType<T>(option: WithFuncType<T>) {
   return typeof value === "object" && value !== null ? deepClone(value) : value;
 }
 
+export function stoppableEffect(fn: () => void) {
+  return effectScope(() => {
+    effect(fn);
+  });
+}
+
 export function handleFunTypeEffect<T>(
   option: WithFuncType<T>,
   handleEffect?: (newValue: T) => void,
-  handled?: boolean
+  gatherEffectAborts?: (() => void)[],
+  handled = false
 ) {
   if (handled) {
     return;
   }
   if (isFunction(handleEffect)) {
-    effect(() => {
+    const stopScope = stoppableEffect(() => {
       handleEffect(handleWithFunType(option));
     });
+    if (Array.isArray(gatherEffectAborts)) {
+      gatherEffectAborts.push(stopScope);
+    }
   }
 }
 
 export function watchEffect<T>(
   option: WithFuncType<T>,
   handleEffect: (next: T, previous: T) => void,
-  handled: boolean = false,
+  gatherEffectAborts?: (() => void)[],
+  handled = false,
   isEqual: (next: T, previous: T) => boolean = (a, b) => Object.is(a, b),
   update: (next: T, previous: T) => T = (next, _previous) => next
 ) {
@@ -41,6 +52,7 @@ export function watchEffect<T>(
       handleEffect(newValue, result.value);
       result.value = update(newValue, result.value);
     },
+    gatherEffectAborts,
     handled
   );
   return result;

@@ -85,7 +85,7 @@
 ```
 
 ```ts
-import { cr, signal } from "domily";
+import { computed, signal } from "domily";
 import Logo from "@/assets/imgs/logo.webp";
 import useTheme from "@/store/theme";
 import IconSun from "@/assets/imgs/sun.svg";
@@ -100,7 +100,7 @@ const store = useTheme((_, details) => {
   autoThemeDetail(details);
 });
 
-const icon = cr(() => {
+const icon = computed(() => {
   if (store.theme === "light") {
     return IconSun;
   }

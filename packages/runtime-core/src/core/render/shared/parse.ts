@@ -1,4 +1,4 @@
-import { effect, type WithFuncType } from "../../reactive";
+import { stoppableEffect, type WithFuncType } from "../../reactive";
 import { mountable, txt } from "../../../utils/dom";
 import { isFunction, isObject } from "../../../utils/is";
 import { merge } from "../../../utils/obj";
@@ -98,7 +98,8 @@ export function gatherLifeCycle(
 
 export function domilyChildToDomilyRenderSchema(
   input?: WithFuncType<DOMilyChild>,
-  gatherChildLifeCycle?: ILifecycleItem
+  gatherChildLifeCycle?: ILifecycleItem,
+  gatherEffectAborts?: (() => void)[]
 ): DomilyRenderSchema<any, any> | null {
   if (!input) {
     return null;
@@ -106,7 +107,7 @@ export function domilyChildToDomilyRenderSchema(
 
   if (isFunction(input)) {
     let originalSchema = domilyChildToDomilyRenderSchema(input());
-    effect(() => {
+    const stopEffect = stoppableEffect(() => {
       const nextSchema = domilyChildToDomilyRenderSchema(input());
       EventBus.emit(EVENTS.__INTERNAL_UPDATE, {
         nextSchema,
@@ -115,6 +116,9 @@ export function domilyChildToDomilyRenderSchema(
       originalSchema = nextSchema;
     });
     gatherLifeCycle(gatherChildLifeCycle, originalSchema);
+    if (Array.isArray(gatherEffectAborts)) {
+      gatherEffectAborts.push(stopEffect);
+    }
     return originalSchema;
   }
 
@@ -177,7 +181,8 @@ export function domilyChildToDOMilyMountableRender(
 
 export function domilyChildToDOM(
   child: WithFuncType<DOMilyChild | DOMilyChildDOM>,
-  gatherChildLifeCycleQueue?: ILifecycleItem[]
+  gatherChildLifeCycleQueue?: ILifecycleItem[],
+  gatherEffectAborts?: (() => void)[]
 ): HTMLElement | Node | null {
   if (!child) {
     return null;
@@ -202,7 +207,8 @@ export function domilyChildToDOM(
 
   const childSchema = domilyChildToDomilyRenderSchema(
     child as WithFuncType<DOMilyChild>,
-    lifecycle
+    lifecycle,
+    gatherEffectAborts
   );
 
   if (!childSchema) {
