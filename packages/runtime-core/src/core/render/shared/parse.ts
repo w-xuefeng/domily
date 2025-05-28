@@ -222,5 +222,9 @@ export function domilyChildToDOM(
     gatherChildLifeCycleQueue.push(lifecycle);
   }
 
+  if (Array.isArray(gatherEffectAborts)) {
+    childSchema.gatherInternalEffectAborts(gatherEffectAborts);
+  }
+
   return dom;
 }

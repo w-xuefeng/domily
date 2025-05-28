@@ -446,6 +446,14 @@ export default class DomilyRenderSchema<
     this.__dom?.appendChild(nextMappedListFragment);
   }
 
+  gatherInternalEffectAborts(gatherArray: (() => void)[]) {
+    for (const abort of this._internalEffectAborts) {
+      if (isFunction(abort)) {
+        gatherArray.push(abort);
+      }
+    }
+  }
+
   abortEffect() {
     for (const abort of this._internalEffectAborts) {
       isFunction(abort) && abort();
@@ -511,6 +519,9 @@ export default class DomilyRenderSchema<
       this.domIf,
       (nextDomIf) => {
         if (previousDomIf === nextDomIf) {
+          return;
+        }
+        if (!this.__dom?.isConnected) {
           return;
         }
         if (!nextDomIf) {
