@@ -28,7 +28,7 @@ import {
   txt,
 } from "../../utils/dom";
 import { hasDiff, merge } from "../../utils/obj";
-import { isFunction } from "../../utils/is";
+import { isFunction, isIterable } from "../../utils/is";
 import { domilyChildToDOM } from "./shared/parse";
 import DomilyFragment from "./custom-elements/fragment";
 import DomilyRouterView from "./custom-elements/router-view";
@@ -88,7 +88,7 @@ export default class DomilyRenderSchema<
    * list-loop
    */
   mapList?: {
-    list: WithFuncType<ListData[]>;
+    list: WithFuncType<Iterable<ListData>>;
     map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
   };
   key?: WithFuncType<string | number>;
@@ -417,7 +417,7 @@ export default class DomilyRenderSchema<
 
   updateDOMList(
     map?: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM,
-    list?: ListData[] | null
+    list?: Iterable<ListData> | null
   ) {
     if (!this.__dom || !handleWithFunType(this.domIf)) {
       return;
@@ -428,9 +428,10 @@ export default class DomilyRenderSchema<
     this.mappedSchemaList = [];
     this.mappedDOMList = [];
     const nextMappedListFragment = document.createDocumentFragment();
-    if (Array.isArray(list) && isFunction(map)) {
-      for (let i = 0; i < list.length; i++) {
-        const child = map.apply(list, [list[i], i]);
+    if (isIterable(list) && isFunction(map)) {
+      let i = 0;
+      for (const item of list) {
+        const child = map.apply(list, [item, i++]);
         this.mappedSchemaList.push(child);
         const childDOM = domilyChildToDOM(
           child,
@@ -496,12 +497,10 @@ export default class DomilyRenderSchema<
         },
         this._internalEffectAborts
       );
-      if (Array.isArray(previousList) && isFunction(this.mapList?.map)) {
-        for (let i = 0; i < previousList.length; i++) {
-          const child = this.mapList.map.apply(previousList, [
-            previousList[i],
-            i,
-          ]);
+      if (isIterable(previousList) && isFunction(this.mapList?.map)) {
+        let i = 0;
+        for (const item of previousList) {
+          const child = this.mapList.map.apply(previousList, [item, i++]);
           if (!this.mappedSchemaList) {
             this.mappedSchemaList = [child];
           } else {

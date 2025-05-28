@@ -20,3 +20,9 @@ export const isThenable = (val: any): val is Thenable => {
 export const isES6Promise = (val: any): val is Promise<any> => {
   return isThenable(val) && val instanceof Promise;
 };
+
+export const isIterable = (val: any): val is Iterable<any> => {
+  return (
+    isObject(val) && Symbol.iterator in val && isFunction(val[Symbol.iterator])
+  );
+};

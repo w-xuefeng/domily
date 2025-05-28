@@ -63,10 +63,16 @@ export const hasDiff = (
     _rv
   ) => true
 ): boolean => {
+  /**
+   * Someone may be a falsy value
+   */
   if ((!left && right) || (left && !right)) {
     return true;
   }
 
+  /**
+   * Both are falsy value
+   */
   if (!left && !right) {
     return !Object.is(left, right);
   }
@@ -76,14 +82,24 @@ export const hasDiff = (
   const leftIsArray = Array.isArray(left);
   const rightIsArray = Array.isArray(right);
 
+  /**
+   * The type is different
+   */
   if (leftType !== rightType) {
     return true;
   }
 
+  /**
+   * The type is different
+   * one of them is Array and another not be
+   */
   if ((leftIsArray && !rightIsArray) || (!leftIsArray && rightIsArray)) {
     return true;
   }
 
+  /**
+   * Both are Array
+   */
   if (leftIsArray && rightIsArray) {
     if (left.length !== right.length) {
       return true;
@@ -92,8 +108,50 @@ export const hasDiff = (
   }
 
   if (leftType === "object") {
-    const leftKeys = Object.keys(left);
-    const rightKeys = Object.keys(right);
+    /**
+     * The object type is different
+     * one of them is iterable and another not be
+     */
+    if (
+      (Symbol.iterator in left && !(Symbol.iterator in right)) ||
+      (!(Symbol.iterator in left) && Symbol.iterator in right)
+    ) {
+      return true;
+    }
+
+    /**
+     * Both are iterator
+     */
+    if (Symbol.iterator in left && Symbol.iterator in right) {
+      const leftArray = [];
+      const rightArray = [];
+      for (const leftItem of left) {
+        leftArray.push(leftItem);
+      }
+      for (const rightItem of right) {
+        rightArray.push(rightItem);
+      }
+      return hasDiff(leftArray, rightArray, compare);
+    }
+
+    /**
+     * The one of them is Date
+     * compare the result of its getTime()
+     */
+    if (left instanceof Date) {
+      return left.getTime() !== right.getTime?.();
+    }
+
+    /**
+     * The one of them is RegExp
+     * compare theirs source and flags
+     */
+    if (left instanceof RegExp) {
+      return left.source !== right.source || left.flags !== right.flags;
+    }
+
+    const leftKeys = Reflect.ownKeys(left);
+    const rightKeys = Reflect.ownKeys(right);
     if (leftKeys.length !== rightKeys.length) {
       return true;
     }

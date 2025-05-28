@@ -1,8 +1,30 @@
-import { computed, reactive } from "domily";
+import { reactive, type Ref, ref } from "domily";
+
+class Req implements Disposable {
+  url: string;
+  loading: Ref<boolean>;
+  reqInit?: RequestInit;
+  response?: Response;
+  constructor(url: string, req?: RequestInit & { loading?: Ref<boolean> }) {
+    const { loading, ...reqInit } = req || {};
+    this.url = url;
+    this.loading = loading || ref(false);
+    this.reqInit = reqInit;
+    loading.value = true;
+  }
+
+  async fetch() {
+    this.response = await fetch(this.url, this.reqInit);
+  }
+
+  [Symbol.dispose]() {
+    this.loading.value = false;
+  }
+}
 
 export default function MapList() {
+  const loading = ref(false);
   const state = reactive<{
-    loading: boolean;
     data: {
       map: Map<string, any>;
       array: string[];
@@ -10,7 +32,6 @@ export default function MapList() {
     };
     key: number;
   }>({
-    loading: false,
     data: {
       map: new Map(),
       array: [],
@@ -31,35 +52,23 @@ export default function MapList() {
   });
 
   const getData = async () => {
-    state.loading = true;
-    try {
-      const rs = await fetch("https://api.pearktrue.cn/api/countdownday/");
-      const json = (await rs.json()) as { data: string[] };
-      style.color = "red";
-      state.data.map = new Map(
-        json.data.map((item, index) => [`${index}`, item])
-      );
-      state.data.set = new Set(json.data);
-      state.data.array = json.data;
-    } finally {
-      state.loading = false;
-    }
+    await using req = new Req("https://api.pearktrue.cn/api/countdownday/", {
+      loading,
+    });
+    await req.fetch();
+    const json = (await req.response.json()) as { data: string[] };
+    style.color = "red";
+    state.data.map = new Map(
+      json.data.map((item, index) => [`${index}`, item]),
+    );
+    state.data.set = new Set(json.data);
+    state.data.array = json.data;
   };
 
-  const mapText = computed(() => {
-    if (state.loading) {
-      return "Loading...";
-    }
-    const data = Array.from(state.data.map.values());
-    return JSON.stringify(data, null, 2);
-  });
-
-  const setText = () => {
-    if (state.loading) {
-      return "Loading...";
-    }
-    const data = Array.from(state.data.set.values());
-    return JSON.stringify(data, null, 2);
+  const Loading = {
+    tag: "div",
+    domIf: () => loading.value,
+    text: "Loading...",
   };
 
   return {
@@ -92,7 +101,7 @@ export default function MapList() {
           click: () => {
             state.data.array.shift();
             state.data.map = new Map(
-              state.data.array.map((item, index) => [`${index}`, item])
+              state.data.array.map((item, index) => [`${index}`, item]),
             );
             state.data.set = new Set(state.data.array);
           },
@@ -107,7 +116,7 @@ export default function MapList() {
             const value = (Math.random() * 5000).toFixed(0) + "-" + Date.now();
             state.data.array.unshift(value);
             state.data.map = new Map(
-              state.data.array.map((item, index) => [`${index}`, item])
+              state.data.array.map((item, index) => [`${index}`, item]),
             );
             state.data.set = new Set(state.data.array);
           },
@@ -178,11 +187,27 @@ export default function MapList() {
                 tag: "h3",
                 text: "Map Data",
               },
+              Loading,
               {
                 tag: "div",
                 style:
                   'white-space: pre-wrap; font-family: "Courier New", Courier, monospace;',
-                text: mapText,
+                children: [
+                  {
+                    tag: "ul",
+                    domIf: () => !loading.value,
+                    mapList: {
+                      list: () => state.data.map,
+                      map: ([index, item]) => {
+                        return {
+                          tag: "li",
+                          key: `list-${index}`,
+                          text: item,
+                        };
+                      },
+                    },
+                  },
+                ],
               },
             ],
           },
@@ -195,11 +220,27 @@ export default function MapList() {
                 tag: "h3",
                 text: "Set Data",
               },
+              Loading,
               {
                 tag: "div",
                 style:
                   'white-space: pre-wrap; font-family: "Courier New", Courier, monospace;',
-                text: setText,
+                children: [
+                  {
+                    tag: "ul",
+                    domIf: () => !loading.value,
+                    mapList: {
+                      list: () => state.data.set,
+                      map: (item: string, index: number) => {
+                        return {
+                          tag: "li",
+                          key: `list-${index}`,
+                          text: item,
+                        };
+                      },
+                    },
+                  },
+                ],
               },
             ],
           },
@@ -212,14 +253,10 @@ export default function MapList() {
                 tag: "h3",
                 text: "Array Data",
               },
-              {
-                tag: "div",
-                domIf: () => state.loading,
-                text: "Loading...",
-              },
+              Loading,
               {
                 tag: "ul",
-                domIf: () => !state.loading,
+                domIf: () => !loading.value,
                 mapList: {
                   list: () => state.data.array,
                   map: (item: string, index: number) => {
