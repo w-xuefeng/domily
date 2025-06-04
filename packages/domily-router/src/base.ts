@@ -287,6 +287,7 @@ export default abstract class DomilyRouterBase {
   }
 
   async deepRender(matched?: IMatchedRoute | null, groupKey?: string) {
+    await Promise.resolve().then();
     if (!this.root || !matched) {
       return false;
     }
