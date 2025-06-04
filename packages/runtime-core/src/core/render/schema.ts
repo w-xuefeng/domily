@@ -14,6 +14,7 @@ import type {
 } from "./type/types";
 import {
   c,
+  ensurePromiseOrder,
   f,
   h,
   handleCSS,
@@ -113,7 +114,9 @@ export default class DomilyRenderSchema<
   /**
    * life cycle
    */
+  beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
   private childLifeCycleQueue: ILifecycleItem[] = [];
 
@@ -121,6 +124,8 @@ export default class DomilyRenderSchema<
    * internal status
    */
   private _internalEffectAborts: (() => void)[] = [];
+  private _internalDomIfRenderQueue: (() => Promise<void>)[] = [];
+  private _internalDomIfRenderQueueExecuting = false;
 
   eventsAbortController: Map<DOMilyEventKeys, AbortController> = new Map();
 
@@ -187,7 +192,34 @@ export default class DomilyRenderSchema<
     this.handleLifeCycle(schema);
   }
 
+  async executeQueueRender() {
+    if (this._internalDomIfRenderQueueExecuting) {
+      return;
+    }
+    this._internalDomIfRenderQueueExecuting = true;
+    while (this._internalDomIfRenderQueue.length) {
+      const promise = this._internalDomIfRenderQueue.shift();
+      if (typeof promise === "function") {
+        await promise();
+      }
+    }
+    this._internalDomIfRenderQueueExecuting = false;
+  }
+
   handleLifeCycle(schema: IDomilyRenderOptions<CustomElementMap, K>) {
+    this.beforeMount = (dom) => {
+      const rs: (void | Promise<unknown>)[] = [];
+      if (schema.beforeMount && isFunction(schema.beforeMount)) {
+        rs.push(schema.beforeMount(dom));
+      }
+      this.childLifeCycleQueue.forEach((child) => {
+        if (child.beforeMount && isFunction(child.beforeMount)) {
+          rs.push(child.beforeMount(child.dom));
+        }
+      });
+      return Promise.allSettled(rs);
+    };
+
     this.mounted = (dom) => {
       if (schema.mounted && isFunction(schema.mounted)) {
         schema.mounted(dom);
@@ -197,6 +229,19 @@ export default class DomilyRenderSchema<
           child.mounted(child.dom);
         }
       });
+    };
+
+    this.beforeUnmount = (dom) => {
+      const rs: (void | Promise<unknown>)[] = [];
+      if (schema.beforeUnmount && isFunction(schema.beforeUnmount)) {
+        rs.push(schema.beforeUnmount(dom));
+      }
+      this.childLifeCycleQueue.forEach((child) => {
+        if (child.beforeUnmount && isFunction(child.beforeUnmount)) {
+          rs.push(child.beforeUnmount(child.dom));
+        }
+      });
+      return Promise.allSettled(rs);
     };
 
     this.unmounted = () => {
@@ -517,20 +562,50 @@ export default class DomilyRenderSchema<
     handleFunTypeEffect(
       this.domIf,
       (nextDomIf) => {
-        if (previousDomIf === nextDomIf) {
-          return;
-        }
-        if (!this.__dom?.isConnected) {
-          return;
-        }
-        if (!nextDomIf) {
-          this.__dom = this.domInterrupter(replaceDOM(this.__dom, c("dom-if")));
-        } else {
-          const originalDom = this.__dom;
-          const nextDom = this.render();
-          this.__dom = replaceDOM(originalDom, nextDom);
-        }
-        previousDomIf = nextDomIf;
+        const handler = async () => {
+          const hideDOM = () => {
+            this.__dom = this.domInterrupter(
+              replaceDOM(this.__dom, c("dom-if"))
+            );
+          };
+          const rebuildDOM = () => {
+            const originalDom = this.__dom;
+            const nextDom = this.render();
+            this.__dom = replaceDOM(originalDom, nextDom);
+          };
+          if (previousDomIf === nextDomIf) {
+            return;
+          }
+          if (!this.__dom?.isConnected) {
+            return;
+          }
+          if (!nextDomIf) {
+            await ensurePromiseOrder(
+              this.beforeUnmount,
+              () => {
+                hideDOM();
+                if (typeof this.unmounted === "function") {
+                  this.unmounted();
+                }
+              },
+              [this.__dom]
+            );
+          } else {
+            await ensurePromiseOrder(
+              this.beforeMount,
+              () => {
+                rebuildDOM();
+                if (typeof this.mounted === "function") {
+                  this.mounted(this.__dom);
+                }
+              },
+              [this.__dom]
+            );
+          }
+          previousDomIf = nextDomIf;
+        };
+        this._internalDomIfRenderQueue.push(handler);
+        this.executeQueueRender();
       },
       this._internalEffectAborts
     );

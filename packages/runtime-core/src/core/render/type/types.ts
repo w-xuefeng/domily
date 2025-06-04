@@ -207,7 +207,9 @@ export interface IDomilyRenderOptions<
   /**
    * life cycle
    */
+  beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
 }
 
@@ -242,6 +244,8 @@ export interface DOMilyMountableRender<
 
 export interface ILifecycleItem {
   dom: HTMLElement | Node | null;
+  beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
 }

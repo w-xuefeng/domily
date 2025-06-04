@@ -88,8 +88,14 @@ export function gatherLifeCycle(
   item?: ILifecycleItem,
   schema?: DomilyRenderSchema<any, any> | null
 ) {
+  if (isObject(item) && isFunction(schema?.beforeMount)) {
+    item.beforeMount = schema.beforeMount;
+  }
   if (isObject(item) && isFunction(schema?.mounted)) {
     item.mounted = schema.mounted;
+  }
+  if (isObject(item) && isFunction(schema?.beforeUnmount)) {
+    item.beforeUnmount = schema.beforeUnmount;
   }
   if (isObject(item) && isFunction(schema?.unmounted)) {
     item.unmounted = schema.unmounted;

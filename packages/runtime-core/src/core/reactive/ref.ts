@@ -17,3 +17,17 @@ export default function ref<T>(value: T): Ref<T> {
   });
   return signalValue as Ref<T>;
 }
+
+export function shallowRef<T>(value: T): Ref<T> {
+  const signalValue = signal(value);
+  Reflect.defineProperty(signalValue, "value", {
+    get() {
+      const rs = signalValue();
+      return rs;
+    },
+    set(newValue: T) {
+      signalValue(newValue);
+    },
+  });
+  return signalValue as Ref<T>;
+}

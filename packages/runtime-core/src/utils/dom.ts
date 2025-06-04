@@ -398,7 +398,7 @@ export function isSvgTag<K extends keyof WithCustomElementTagNameMap>(
 }
 
 export function isSvgDOM(dom: HTMLElement | SVGAElement) {
-  return dom.dataset.domType === "svg" || dom.tagName === "svg";
+  return dom?.dataset?.domType === "svg" || dom?.tagName === "svg";
 }
 
 export function setDOMClassNames(
@@ -567,28 +567,47 @@ export function replaceDOM(
   throw new Error("[DOMily] replaceDOM is not supported in this environment");
 }
 
+export function ensurePromiseOrder(
+  before?: (...args: any[]) => void | Promise<unknown>,
+  after?: (...args: any[]) => void,
+  beforeArgs: any[] = [],
+  afterArgs: any[] = []
+) {
+  return Promise.resolve(
+    typeof before === "function" ? before.apply(null, beforeArgs) : void 0
+  ).finally(() => {
+    if (typeof after === "function") {
+      after.apply(null, afterArgs);
+    }
+  });
+}
+
 export function mountable(schema: DomilyRenderSchema<any, any, any>) {
   const result = {
     schema,
     unmount: () => {
-      if (schema.__dom) {
+      const after = () => {
+        if (!schema.__dom) {
+          return;
+        }
         removeDOM(schema.__dom);
         if (typeof schema.unmounted === "function") {
           schema.unmounted();
         }
-      }
+      };
+      ensurePromiseOrder(schema.beforeUnmount, after, [schema.__dom]);
     },
     mount: (
       parent: HTMLElement | Document | ShadowRoot | string = document.body
     ) => {
-      if (schema.__dom) {
-        domMountToParent(schema.__dom, parent);
-      } else {
-        domMountToParent(schema.render(), parent);
-      }
-      if (typeof schema.mounted === "function") {
-        schema.mounted(schema.__dom);
-      }
+      const dom = schema.__dom ?? schema.render();
+      const after = (dom: Node | null) => {
+        domMountToParent(dom, parent);
+        if (typeof schema.mounted === "function") {
+          schema.mounted(dom);
+        }
+      };
+      ensurePromiseOrder(schema.beforeMount, after, [dom], [dom]);
     },
   };
   return result;

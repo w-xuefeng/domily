@@ -7,6 +7,8 @@ import type {
 import DomilyRenderSchema from "../render/schema";
 import { domilyChildToDOMilyMountableRender } from "../render/shared/parse";
 
+export * from "./builtin";
+
 export interface DOMilyComponent {
   (props?: any):
     | WithFuncType<DomilyRenderSchema>
