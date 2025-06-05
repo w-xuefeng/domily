@@ -3,6 +3,7 @@ export * as EB from "./utils/event-bus";
 export * as ISUtils from "./utils/is";
 export * as OBJUtils from "./utils/obj";
 export * as TAGSUtils from "./utils/tags";
+export * as OverrideUtils from "./utils/override";
 export * from "./core/render";
 export * from "./core/component";
 export * from "./domily";

@@ -178,7 +178,7 @@ function render<K extends DOMilyTags, ListData = any>(
 interface IDomilyRenderOptions<
   CustomElementMap = {},
   K extends DOMilyTags<CustomElementMap> = DOMilyTags,
-  ListData = any,
+  ListData = any
 > {
   /**
    * base info
@@ -186,6 +186,11 @@ interface IDomilyRenderOptions<
   tag: K;
   id?: WithFuncType<string>;
   className?: WithFuncType<string>;
+
+  /**
+   * the selector of the container to teleport
+   */
+  to?: string | HTMLElement | ShadowRoot;
 
   /**
    * style info
@@ -221,9 +226,10 @@ interface IDomilyRenderOptions<
    * list-map
    */
   mapList?: {
-    list: ListData[];
+    list: WithFuncType<Iterable<ListData>>;
     map: (data: ListData, index: number) => DOMilyChild | DOMilyChildDOM;
   };
+  key?: WithFuncType<string | number>;
 
   /**
    * custom element
@@ -233,7 +239,10 @@ interface IDomilyRenderOptions<
   /**
    * life cycle
    */
+  beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  updated?: (dom: HTMLElement | Node | null) => void;
+  beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
 }
 ```

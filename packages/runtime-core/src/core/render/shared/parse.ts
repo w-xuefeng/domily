@@ -12,6 +12,7 @@ import type {
   ILifecycleItem,
 } from "../type/types";
 import { EventBus, EVENTS } from "../../../utils/event-bus";
+import { TELEPORT_KEY } from "../../../config";
 
 /**
  * obj is DomilyRenderSchema
@@ -93,6 +94,9 @@ export function gatherLifeCycle(
   }
   if (isObject(item) && isFunction(schema?.mounted)) {
     item.mounted = schema.mounted;
+  }
+  if (isObject(item) && isFunction(schema?.updated)) {
+    item.updated = schema.updated;
   }
   if (isObject(item) && isFunction(schema?.beforeUnmount)) {
     item.beforeUnmount = schema.beforeUnmount;
@@ -230,6 +234,14 @@ export function domilyChildToDOM(
 
   if (Array.isArray(gatherEffectAborts)) {
     childSchema.gatherInternalEffectAborts(gatherEffectAborts);
+  }
+
+  if (dom && childSchema.to) {
+    Reflect.defineProperty(dom, TELEPORT_KEY, {
+      writable: true,
+      configurable: true,
+      value: childSchema.to,
+    });
   }
 
   return dom;

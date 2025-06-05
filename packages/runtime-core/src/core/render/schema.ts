@@ -10,6 +10,7 @@ import type {
   IDomilyCustomElementOptions,
   IDomilyRenderOptions,
   ILifecycleItem,
+  LifecycleName,
   TDomilyRenderProperties,
 } from "./type/types";
 import {
@@ -54,6 +55,11 @@ export default class DomilyRenderSchema<
   tag: K;
   id?: WithFuncType<string>;
   className?: WithFuncType<string>;
+
+  /**
+   * the selector of the container to teleport
+   */
+  to?: string | HTMLElement | ShadowRoot;
 
   /**
    * style info
@@ -116,6 +122,7 @@ export default class DomilyRenderSchema<
    */
   beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  updated?: (dom: HTMLElement | Node | null) => void;
   beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
   private childLifeCycleQueue: ILifecycleItem[] = [];
@@ -123,6 +130,7 @@ export default class DomilyRenderSchema<
   /**
    * internal status
    */
+  private _initialed = false;
   private _internalEffectAborts: (() => void)[] = [];
   private _internalDomIfRenderQueue: (() => Promise<void>)[] = [];
   private _internalDomIfRenderQueueExecuting = false;
@@ -144,6 +152,11 @@ export default class DomilyRenderSchema<
     this.tag = schema.tag;
     this.id = schema.id;
     this.className = schema.className;
+
+    /**
+     * the selector of the container to teleport
+     */
+    this.to = schema.to;
 
     /**
      * style info
@@ -231,6 +244,17 @@ export default class DomilyRenderSchema<
       });
     };
 
+    this.updated = (dom) => {
+      if (schema.updated && isFunction(schema.updated)) {
+        schema.updated(dom);
+      }
+      this.childLifeCycleQueue.forEach((child) => {
+        if (child.updated && isFunction(child.updated)) {
+          child.updated(child.dom);
+        }
+      });
+    };
+
     this.beforeUnmount = (dom) => {
       const rs: (void | Promise<unknown>)[] = [];
       if (schema.beforeUnmount && isFunction(schema.beforeUnmount)) {
@@ -254,6 +278,18 @@ export default class DomilyRenderSchema<
         schema.unmounted();
       }
     };
+  }
+
+  runLifecycle(lifecycle: LifecycleName) {
+    /**
+     * ignore updated when initial
+     */
+    if (lifecycle === "updated" && !this._initialed) {
+      return;
+    }
+    if (isFunction(this[lifecycle])) {
+      this[lifecycle](this.__dom);
+    }
   }
 
   handleEventsOption(
@@ -383,6 +419,7 @@ export default class DomilyRenderSchema<
             previousCSS,
             nextStyle
           ) as HTMLStyleElement | null;
+          this.runLifecycle("updated");
         },
         this._internalEffectAborts
       );
@@ -444,6 +481,7 @@ export default class DomilyRenderSchema<
         if (this.__dom) {
           Reflect.set(this.__dom, LIST_MAP_KEY_ATTR, nextKey);
         }
+        this.runLifecycle("updated");
         previousKey = nextKey;
       },
       this._internalEffectAborts
@@ -454,9 +492,11 @@ export default class DomilyRenderSchema<
 
   domInterrupter(dom: HTMLElement | Node | null) {
     if (!dom) {
+      this._initialed = true;
       return dom;
     }
     const nextDOM = this.domWithKey(this.handleCustomElement(dom));
+    this._initialed = true;
     return nextDOM;
   }
 
@@ -490,6 +530,7 @@ export default class DomilyRenderSchema<
       }
     }
     this.__dom?.appendChild(nextMappedListFragment);
+    this.runLifecycle("updated");
   }
 
   gatherInternalEffectAborts(gatherArray: (() => void)[]) {
@@ -625,6 +666,7 @@ export default class DomilyRenderSchema<
             this.__dom.style.cssText,
             !nextDomShow
           ) as string;
+          this.runLifecycle("updated");
         }
       },
       this._internalEffectAborts
@@ -640,6 +682,7 @@ export default class DomilyRenderSchema<
           this.__dom = this.domInterrupter(
             replaceDOM(this.__dom, txt(!previousDomShow.value ? void 0 : text))
           );
+          this.runLifecycle("updated");
         },
         this._internalEffectAborts
       );
@@ -662,6 +705,7 @@ export default class DomilyRenderSchema<
               c(!previousDomShow.value ? '"domily-comment-hidden"' : text)
             )
           );
+          this.runLifecycle("updated");
         },
         this._internalEffectAborts
       );
@@ -687,6 +731,7 @@ export default class DomilyRenderSchema<
           previousCSS,
           nextStyle
         ) as HTMLStyleElement | null;
+        this.runLifecycle("updated");
       },
       this._internalEffectAborts
     );
@@ -705,6 +750,7 @@ export default class DomilyRenderSchema<
         if (this.__dom && "style" in this.__dom) {
           this.__dom.style.cssText =
             typeof nextStyle === "string" ? nextStyle : "";
+          this.runLifecycle("updated");
         }
         previousStyle = nextStyle;
       },
@@ -754,6 +800,7 @@ export default class DomilyRenderSchema<
             Object.keys(nextProps).forEach((k) => {
               Reflect.set(this.__dom as HTMLElement, k, nextProps[k]);
             });
+            this.runLifecycle("updated");
             previousProps = nextProps;
           },
           this._internalEffectAborts
@@ -772,6 +819,7 @@ export default class DomilyRenderSchema<
                   }
                   if (this.__dom) {
                     Reflect.set(this.__dom as HTMLElement, "id", id);
+                    this.runLifecycle("updated");
                   }
                   previousId = id;
                 },
@@ -797,6 +845,7 @@ export default class DomilyRenderSchema<
                       this.tag as string,
                       className
                     );
+                    this.runLifecycle("updated");
                   }
                   previousClassName = className;
                 },
@@ -818,6 +867,7 @@ export default class DomilyRenderSchema<
                   }
                   if (this.__dom) {
                     Reflect.set(this.__dom as HTMLElement, "innerHTML", html);
+                    this.runLifecycle("updated");
                   }
                   previousHTML = html;
                 },
@@ -838,6 +888,7 @@ export default class DomilyRenderSchema<
                   }
                   if (this.__dom) {
                     Reflect.set(this.__dom as HTMLElement, "innerText", text);
+                    this.runLifecycle("updated");
                   }
                   previousText = text;
                 },
@@ -861,6 +912,7 @@ export default class DomilyRenderSchema<
             Object.keys(nextAttrs).forEach((k) => {
               (this.__dom as HTMLElement).setAttribute(k, nextAttrs[k]);
             });
+            this.runLifecycle("updated");
             previousAttrs = nextAttrs;
           },
           this._internalEffectAborts
@@ -877,7 +929,8 @@ export default class DomilyRenderSchema<
           () => f(children),
           props,
           void 0,
-          this._internalEffectAborts
+          this._internalEffectAborts,
+          () => this.runLifecycle("updated")
         )
       );
     } else if (this.tag === DomilyRouterView.name) {
@@ -886,7 +939,8 @@ export default class DomilyRenderSchema<
           () => rv(children),
           props,
           void 0,
-          this._internalEffectAborts
+          this._internalEffectAborts,
+          () => this.runLifecycle("updated")
         )
       );
     } else if (this.tag === "rich-text") {
@@ -897,7 +951,8 @@ export default class DomilyRenderSchema<
           () => rt({ html }),
           props,
           void 0,
-          this._internalEffectAborts
+          this._internalEffectAborts,
+          () => this.runLifecycle("updated")
         )
       );
     } else {
@@ -906,7 +961,8 @@ export default class DomilyRenderSchema<
           this.tag,
           props,
           children,
-          this._internalEffectAborts
+          this._internalEffectAborts,
+          () => this.runLifecycle("updated")
         ) as HTMLElement
       );
     }

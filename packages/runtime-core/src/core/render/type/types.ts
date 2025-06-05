@@ -161,6 +161,11 @@ export interface IDomilyRenderOptions<
   className?: WithFuncType<string>;
 
   /**
+   * the selector of the container to teleport
+   */
+  to?: string | HTMLElement | ShadowRoot;
+
+  /**
    * style info
    */
   css?: WithFuncType<string | DOMilyCascadingStyleSheets>;
@@ -209,6 +214,7 @@ export interface IDomilyRenderOptions<
    */
   beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  updated?: (dom: HTMLElement | Node | null) => void;
   beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
 }
@@ -246,6 +252,9 @@ export interface ILifecycleItem {
   dom: HTMLElement | Node | null;
   beforeMount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   mounted?: (dom: HTMLElement | Node | null) => void;
+  updated?: (dom: HTMLElement | Node | null) => void;
   beforeUnmount?: (dom: HTMLElement | Node | null) => void | Promise<unknown>;
   unmounted?: () => void;
 }
+
+export type LifecycleName = keyof Omit<ILifecycleItem, "dom">;

@@ -12,6 +12,7 @@ import {
   handleWithFunType,
   stoppableEffect,
 } from "../core/reactive/handle-effect";
+import { TELEPORT_KEY } from "../config";
 
 export const noop = () => {};
 export const svgNamespace = "http://www.w3.org/2000/svg" as const;
@@ -295,6 +296,31 @@ export function cssObjectToText(
     .join(";");
 }
 
+export function teleportDOM(dom: unknown) {
+  if (typeof dom !== "object" || !dom) {
+    return false;
+  }
+  const to = Reflect.get(dom, TELEPORT_KEY) || (dom as any)[TELEPORT_KEY];
+  if (!to) {
+    return false;
+  }
+  domMountToParent(dom as Node, to);
+  return true;
+}
+
+export function teleportChildren(
+  children: (string | HTMLElement | Element | Node)[]
+) {
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < children.length; index++) {
+    const dom = children[index];
+    if (!teleportDOM(dom)) {
+      fragment.append(dom);
+    }
+  }
+  return fragment;
+}
+
 export function internalCreateElement<P>(
   creatorElement: (() => SVGElement) | (() => HTMLElement),
   properties?: P,
@@ -304,7 +330,8 @@ export function internalCreateElement<P>(
     | Element
     | HTMLElement
     | Node,
-  gatherEffectAborts?: (() => void)[]
+  gatherEffectAborts?: (() => void)[],
+  onUpdated?: () => void
 ) {
   const container = creatorElement();
   if (properties) {
@@ -319,6 +346,7 @@ export function internalCreateElement<P>(
             } else {
               container.setAttribute(ak, next);
             }
+            typeof onUpdated === "function" && onUpdated();
           });
           if (Array.isArray(gatherEffectAborts)) {
             gatherEffectAborts.push(stopEffect);
@@ -372,6 +400,7 @@ export function internalCreateElement<P>(
         Reflect.set(container, k, handleWithFunType(v));
         const stopEffect = stoppableEffect(() => {
           Reflect.set(container, k, handleWithFunType(v));
+          typeof onUpdated === "function" && onUpdated();
         });
         if (Array.isArray(gatherEffectAborts)) {
           gatherEffectAborts.push(stopEffect);
@@ -380,9 +409,8 @@ export function internalCreateElement<P>(
     });
   }
   if (children) {
-    container.append.apply(
-      container,
-      Array.isArray(children) ? children : [children]
+    container.appendChild(
+      teleportChildren(Array.isArray(children) ? children : [children])
     );
   }
   return container;
@@ -420,7 +448,8 @@ export function h<
   tagName: K,
   properties?: TDomilyRenderProperties<CustomTagNameMap, K> | null,
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node,
-  gatherEffectAborts?: (() => void)[]
+  gatherEffectAborts?: (() => void)[],
+  onUpdated?: () => void
 ): WithCustomElementTagNameMap<CustomTagNameMap>[K];
 
 export function h<
@@ -432,7 +461,8 @@ export function h<
     K
   > | null,
   children?: (HTMLElement | Node | string)[] | string | HTMLElement | Node,
-  gatherEffectAborts?: (() => void)[]
+  gatherEffectAborts?: (() => void)[],
+  onUpdated?: () => void
 ) {
   if (typeof tagName !== "string") {
     return null;
@@ -451,7 +481,8 @@ export function h<
     creator,
     properties,
     children,
-    gatherEffectAborts
+    gatherEffectAborts,
+    onUpdated
   );
 }
 
@@ -602,7 +633,7 @@ export function mountable(schema: DomilyRenderSchema<any, any, any>) {
     ) => {
       const dom = schema.__dom ?? schema.render();
       const after = (dom: Node | null) => {
-        domMountToParent(dom, parent);
+        domMountToParent(dom, schema.to ?? parent);
         if (typeof schema.mounted === "function") {
           schema.mounted(dom);
         }
