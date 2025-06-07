@@ -32,6 +32,7 @@ const getGroupKey = (route?: IMatchedRoute | null) =>
   GroupKey.increase(route?.name || route?.path || "GROUP");
 
 export interface ICreateRouterOptions {
+  mode?: "history" | "hash";
   base?: string;
   routes?: IDomilyPageSchema<any, any>[];
 }
@@ -61,7 +62,7 @@ export interface IRouterAfterEach {
 }
 
 export default abstract class DomilyRouterBase {
-  abstract mode: "history" | "hash";
+  mode: "history" | "hash" = "hash";
   /**
    * init router for the specific router
    */
@@ -170,9 +171,10 @@ export default abstract class DomilyRouterBase {
   afterEach: IRouterAfterEach[] = [];
 
   constructor(app: DomilyApp, options?: ICreateRouterOptions) {
-    const { routes, base = "/" } = options || {};
+    const { routes, base = "/", mode = "hash" } = options || {};
     this.base = base;
     this.app = app;
+    this.mode = mode;
     this.routes =
       routes?.map((e) => {
         e.namespace = e.namespace || app.namespace;

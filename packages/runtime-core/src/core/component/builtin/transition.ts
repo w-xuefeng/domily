@@ -12,6 +12,15 @@ const nextFrame = (callback: FrameRequestCallback) => {
   });
 };
 
+function toMilliseconds(time: string) {
+  if (time.endsWith("ms")) {
+    return parseFloat(time);
+  } else if (time.endsWith("s")) {
+    return parseFloat(time) * 1000;
+  }
+  return 0;
+}
+
 function getTotalTransitionTime(element: HTMLElement) {
   if (!(element instanceof HTMLElement)) {
     return 0;
@@ -20,38 +29,23 @@ function getTotalTransitionTime(element: HTMLElement) {
   const durations = style.transitionDuration.split(",").map((d) => d.trim());
   const delays = style.transitionDelay.split(",").map((d) => d.trim());
 
-  function toMilliseconds(time: string) {
-    if (time.endsWith("ms")) {
-      return parseFloat(time);
-    } else if (time.endsWith("s")) {
-      return parseFloat(time) * 1000;
-    }
-    return 0;
-  }
-
   const durationArray = durations.map(toMilliseconds);
-  let delayArray = delays.map(toMilliseconds);
+  const delayArray = delays.map(toMilliseconds);
 
-  // 如果两个数组长度不同，则重复较短的数组直到匹配较长的数组
   const maxLength = Math.max(durationArray.length, delayArray.length);
   if (durationArray.length < maxLength) {
-    // 重复durationArray直到长度等于maxLength
     durationArray.length = maxLength;
     for (let i = durationArray.length; i < maxLength; i++) {
       durationArray[i] = durationArray[i % durationArray.length];
     }
   }
   if (delayArray.length < maxLength) {
-    // 重复delayArray直到长度等于maxLength
     delayArray.length = maxLength;
     for (let i = delayArray.length; i < maxLength; i++) {
       delayArray[i] = delayArray[i % delayArray.length];
     }
   }
-
-  // 计算每个属性的总时间（持续时间+延迟时间）
   const totalTimes = durationArray.map((dur, index) => dur + delayArray[index]);
-  // 取最大值
   const maxTotalTime = Math.max(...totalTimes);
   return maxTotalTime;
 }

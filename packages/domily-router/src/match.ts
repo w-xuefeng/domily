@@ -13,8 +13,14 @@ export interface IMatchedRoute extends IRouterConfig {
   href?: string;
 }
 
+export function parsePathname(pathname: string) {
+  const [pathWithQuery = "", ...hash] = pathname.split("#");
+  const [path = "", search = ""] = pathWithQuery.split("?");
+  return [path, search, hash.join("#")];
+}
+
 export function handleStringPathname(pathname: string) {
-  const [path = "", search, hash] = pathname.split(/(?=[?#])/);
+  const [path, search, hash] = parsePathname(pathname);
   return {
     path,
     query: Object.fromEntries(new URLSearchParams(search).entries()),
@@ -96,7 +102,7 @@ export function generateFullUrl(
   mode: "hash" | "history" = "hash",
   base = "/"
 ) {
-  const [pathname = "", search, hash] = pathTemplate.split(/(?=[?#])/);
+  const [pathname = "", search, hash] = parsePathname(pathTemplate);
   const toPath = PTR.compile(pathname);
   const pathWithParams = toPath(data?.params || {});
   const query = Object.fromEntries(new URLSearchParams(search).entries());
@@ -132,7 +138,7 @@ export function matchRoute(
   routes: IRouterConfig[],
   currentPath: string = globalThis.location.pathname
 ): IMatchedRoute | null {
-  const [pathname = "", search, hash] = currentPath.split(/(?=[?#])/);
+  const [pathname = "", search, hash] = parsePathname(currentPath);
   const query = Object.fromEntries(new URLSearchParams(search).entries());
 
   // 递归匹配函数

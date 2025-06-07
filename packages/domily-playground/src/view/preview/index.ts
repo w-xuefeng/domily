@@ -1,10 +1,23 @@
-import { effect } from "domily";
+import { ref, computed, effect } from "domily";
 import type { ISignalFunc } from "domily";
 import IconLoading from "@/assets/imgs/code-loading.svg";
 
 export default function Preview(props: { code: ISignalFunc<string> }) {
   let url = "";
+
+  const PAGE_LOADED_FLAG = "page-loaded";
+  const notifyLoadCode = `<script>window.addEventListener("load", () => {
+    (window.parent || window.top).postMessage("${PAGE_LOADED_FLAG}", location.origin);
+  });</script>`;
+
+  const notifyAbort = new AbortController();
+  const loading = ref(false);
+  const pageContainerCls = computed(() =>
+    loading.value ? "page-container page-container-loading" : "page-container"
+  );
+
   const mounted = (dom: HTMLIFrameElement | null) => {
+    loading.value = true;
     effect(() => {
       if (!dom) {
         return;
@@ -12,11 +25,32 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
       if (url) {
         URL.revokeObjectURL(url);
       }
-      const htmlFile = new Blob([props.code()], { type: "text/html" });
+      const htmlFile = new Blob([props.code(), notifyLoadCode], {
+        type: "text/html",
+      });
       url = URL.createObjectURL(htmlFile);
       dom.src = url;
     });
+    window.addEventListener(
+      "message",
+      (e) => {
+        if (e.origin !== location.origin) {
+          return;
+        }
+        if (e.data === PAGE_LOADED_FLAG) {
+          loading.value = false;
+        }
+      },
+      {
+        signal: notifyAbort.signal,
+      }
+    );
   };
+
+  const unmounted = () => {
+    notifyAbort.abort();
+  };
+
   return {
     tag: "section",
     customElement: {
@@ -32,7 +66,7 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
         boxSizing: "border-box",
         overflow: "hidden",
       },
-      ".page-container": {
+      ".page-container-loading": {
         backgroundImage: `url(${IconLoading})`,
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center center",
@@ -43,11 +77,12 @@ export default function Preview(props: { code: ISignalFunc<string> }) {
     children: [
       {
         tag: "iframe",
-        className: "page-container",
+        className: pageContainerCls,
         attrs: {
           frameborder: 0,
         },
         mounted,
+        unmounted,
       },
     ],
   };

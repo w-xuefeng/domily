@@ -13,6 +13,7 @@
   "dependencies": {
     "@domily/router": "workspace:^",
     "domily": "workspace:^",
+    "js-base64": "^3.7.7",
     "monaco-editor": "^0.52.2"
   },
   "devDependencies": {

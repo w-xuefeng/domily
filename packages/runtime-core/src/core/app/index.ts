@@ -187,6 +187,9 @@ export default class DomilyApp<
               this.mountable.schema.__dom,
               nextMountable.schema.render()
             );
+            if (isFunction(this.mountable.schema.updated)) {
+              this.mountable.schema.updated(this.mountable.schema.__dom);
+            }
           }
         }
       }

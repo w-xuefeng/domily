@@ -1,10 +1,12 @@
-import { signal, effect } from "domily";
+import { signal, effect, type WithBaseProps } from "domily";
 import Header from "../../components/header.d.md";
 import Editor from "../editor";
 import Preview from "../preview";
+import { useRoute } from "@domily/router";
+import { decode } from "js-base64";
 
-export default function Layout() {
-  const initialCode = `<style>
+export default function Layout({ namespace }: WithBaseProps) {
+  let initialCode = `<style>
   body {
     margin: 0;
   }
@@ -93,6 +95,13 @@ export default function Layout() {
 
   render(App()).mount("#app");
 </script>`;
+
+  const route = useRoute(namespace);
+  const codeFromQuery = route.hash;
+
+  if (codeFromQuery) {
+    initialCode = decodeURIComponent(decode(codeFromQuery));
+  }
 
   const code = signal(initialCode);
 
