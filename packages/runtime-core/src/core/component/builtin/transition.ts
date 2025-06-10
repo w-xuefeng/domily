@@ -1,4 +1,5 @@
 import { KebabToCamel } from "../../../utils/dom";
+import { isFunction } from "../../../utils/is";
 import { ref, computed, handleWithFunType } from "../../reactive";
 import { type IDomilyRenderOptions } from "../../render";
 
@@ -59,13 +60,63 @@ interface IAnimationClassNames {
   leaveTo: string;
 }
 
-export default function Transition(props?: {
+interface IBaseTransitionProps {
   name?: string;
   duration?: number | { enter?: number; leave?: number };
   type?: "transition" | "animation";
   slot?: IDomilyRenderOptions;
-}) {
-  const { name, slot, type = "transition", duration } = props || {};
+  enterFromClass?: string;
+  enterActiveClass?: string;
+  enterToClass?: string;
+  appearFromClass?: string;
+  appearActiveClass?: string;
+  appearToClass?: string;
+  leaveFromClass?: string;
+  leaveActiveClass?: string;
+  leaveToClass?: string;
+}
+
+interface ITransitionEvents {
+  onBeforeEnter?: (el: HTMLElement | Node | null) => void;
+  onEnter?: (el: HTMLElement | Node | null, done: () => void) => void;
+  onAfterEnter?: (el: HTMLElement | Node | null) => void;
+  onBeforeLeave?: (el: HTMLElement | Node | null) => void;
+  onLeave?: (el: HTMLElement | Node | null, done: () => void) => void;
+  onAfterLeave?: (el: HTMLElement | Node | null) => void;
+  onBeforeAppear?: (el: HTMLElement | Node | null) => void;
+  onAppear?: (el: HTMLElement | Node | null, done: () => void) => void;
+  onAfterAppear?: (el: HTMLElement | Node | null) => void;
+}
+
+export default function Transition(
+  props?: IBaseTransitionProps & ITransitionEvents
+) {
+  const {
+    name,
+    slot,
+    type = "transition",
+    duration,
+    enterFromClass = "",
+    enterActiveClass = "",
+    enterToClass = "",
+    appearFromClass = "",
+    appearActiveClass = "",
+    appearToClass = "",
+    leaveFromClass = "",
+    leaveActiveClass = "",
+    leaveToClass = "",
+  } = props || {};
+
+  function callEvent(
+    e: keyof ITransitionEvents,
+    dom: HTMLElement | Node | null,
+    done: () => void = () => {}
+  ) {
+    const event = props?.[e];
+    if (isFunction(event)) {
+      event(dom, done);
+    }
+  }
 
   if (!name || !slot) {
     return slot;
@@ -86,16 +137,28 @@ export default function Transition(props?: {
 
   const enter = (dom: HTMLElement | Node | null) => {
     let timer: number;
+    if (dom instanceof HTMLElement) {
+      cls.value = classNames([
+        animationClassNames.enterFrom,
+        animationClassNames.enterActive,
+        enterFromClass,
+        appearFromClass,
+      ]);
+      callEvent("onBeforeAppear", dom);
+    }
     nextFrame(() => {
       if (!dom) {
         return;
       }
       const end = () => {
         clearTimeout(timer);
-        if (cls.value === "") {
+        if (enterToClass || appearToClass) {
+          cls.value = classNames([enterToClass, appearToClass]);
           return;
         }
-        cls.value = "";
+        if (cls.value !== "") {
+          cls.value = "";
+        }
       };
 
       dom?.addEventListener(type + "end", end, { once: true });
@@ -114,7 +177,24 @@ export default function Transition(props?: {
       cls.value = classNames([
         animationClassNames.enterActive,
         animationClassNames.enterTo,
+        enterActiveClass,
       ]);
+      const done = () => {
+        callEvent("onAfterEnter", dom);
+        if (dom instanceof HTMLElement) {
+          callEvent("onAfterAppear", dom);
+        }
+      };
+      callEvent("onEnter", dom, done);
+      if (dom instanceof HTMLElement) {
+        callEvent("onAppear", dom, done);
+        cls.value = classNames([
+          animationClassNames.enterActive,
+          animationClassNames.enterTo,
+          enterActiveClass,
+          appearActiveClass,
+        ]);
+      }
     });
   };
   const leave = (dom: HTMLElement | Node | null) => {
@@ -122,7 +202,9 @@ export default function Transition(props?: {
     cls.value = classNames([
       animationClassNames.leaveFrom,
       animationClassNames.leaveActive,
+      leaveFromClass,
     ]);
+    callEvent("onBeforeLeave", dom);
 
     let timer: number;
 
@@ -132,11 +214,14 @@ export default function Transition(props?: {
       }
       const end = () => {
         clearTimeout(timer);
-        if (cls.value === "") {
+        if (leaveToClass) {
+          cls.value = leaveToClass;
           resolve();
           return;
         }
-        cls.value = "";
+        if (cls.value !== "") {
+          cls.value = "";
+        }
         resolve();
       };
 
@@ -156,7 +241,13 @@ export default function Transition(props?: {
       cls.value = classNames([
         animationClassNames.leaveActive,
         animationClassNames.leaveTo,
+        leaveActiveClass,
       ]);
+      const done = () => {
+        callEvent("onAfterLeave", dom);
+        resolve();
+      };
+      callEvent("onLeave", dom, done);
     });
     return promise;
   };
@@ -172,7 +263,9 @@ export default function Transition(props?: {
     cls.value = classNames([
       animationClassNames.enterFrom,
       animationClassNames.enterActive,
+      enterFromClass,
     ]);
+    callEvent("onBeforeEnter", dom);
   };
 
   slot.mounted = (dom: HTMLElement | Node | null) => {
