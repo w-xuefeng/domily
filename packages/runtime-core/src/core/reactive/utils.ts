@@ -1,4 +1,8 @@
 import { deepClone } from "../../utils/obj";
+import ref from "./ref";
+import type { LiftFuncType, Reactive, Ref } from "./type";
+
+export const INTERNAL_RAW_KEY = Symbol("raw");
 
 const COLLECTION = {
   Map: Map,
@@ -85,4 +89,39 @@ export function proxyObject<T extends object>(
   };
 
   return new Proxy(original, handler);
+}
+
+export function toRef<T extends object, K extends keyof T>(obj: T, key: K) {
+  return ref(obj?.[key]) as Ref<LiftFuncType<T[K]>>;
+}
+
+export function toRefs<T extends object>(obj: T) {
+  const result = {} as {
+    [K in keyof T]: Ref<LiftFuncType<T[K]>>;
+  };
+  const keys = Reflect.ownKeys(obj);
+  for (const key of keys) {
+    result[key as keyof T] = toRef(obj, key as keyof T);
+  }
+  return result;
+}
+
+export function toRaw<T>(
+  value: T
+): T extends Ref<infer R> ? R : T extends Reactive<infer R> ? R : T {
+  if (typeof value !== "function") {
+    // @ts-ignore
+    return value;
+  }
+
+  const raw =
+    Reflect.get(value, INTERNAL_RAW_KEY) || value[INTERNAL_RAW_KEY as keyof T];
+
+  if (raw !== void 0) {
+    // @ts-ignore
+    return raw;
+  }
+
+  // @ts-ignore
+  return value;
 }

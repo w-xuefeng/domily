@@ -15,8 +15,14 @@ export interface IReactiveFunc<T extends object> {
 export type WithFuncType<T> = T | ((...args: any[]) => T) | ISignalFunc<T>;
 
 export type WithFuncTypeProps<T> = {
-  [K in keyof T]: WithFuncTypeProps<T[K]>;
+  [K in keyof T]: WithFuncType<T[K]>;
 };
+
+export type LiftFuncType<T> = T extends WithFuncType<infer R>
+  ? R
+  : T extends WithFuncTypeProps<infer R>
+  ? R
+  : T;
 
 export type Reactive<T extends object> = T & IReactiveFunc<T>;
 

@@ -1,8 +1,34 @@
 import { signal } from "alien-signals";
-import { proxyObject } from "./utils";
+import { INTERNAL_RAW_KEY, proxyObject, toRaw } from "./utils";
 import type { Reactive } from "./type";
 
+const INTERNAL_REACTIVE_KEY = Symbol("reactive");
+const INTERNAL_REACTIVE_FLAG = "reactive";
+const INTERNAL_SHALLOW_REACTIVE_FLAG = "shallowReactive";
+
+export function isReactive<T extends object = any>(
+  value: any
+): value is Reactive<T> {
+  const flag = value?.[INTERNAL_REACTIVE_KEY];
+  return typeof value === "function" && Object.is(INTERNAL_REACTIVE_FLAG, flag);
+}
+
+export function isShallowReactive<T extends object = any>(
+  value: any
+): value is Reactive<T> {
+  const flag = value?.[INTERNAL_REACTIVE_KEY];
+  return (
+    typeof value === "function" &&
+    Object.is(INTERNAL_SHALLOW_REACTIVE_FLAG, flag)
+  );
+}
+
 export default function reactive<T extends object>(initialValue: T) {
+  if (isReactive<T>(initialValue)) {
+    return initialValue;
+  }
+  initialValue = toRaw(initialValue) as T;
+
   const value = signal<T>(initialValue);
   const setter = (newValue: Partial<T>) => {
     /**
@@ -19,10 +45,27 @@ export default function reactive<T extends object>(initialValue: T) {
           }
     ) as T;
     value(nextValue);
+    Reflect.set(value, INTERNAL_RAW_KEY, value());
   };
+
+  Reflect.defineProperty(value, INTERNAL_REACTIVE_KEY, {
+    configurable: false,
+    writable: false,
+    value: INTERNAL_REACTIVE_FLAG,
+  });
+
+  Reflect.defineProperty(value, INTERNAL_RAW_KEY, {
+    value: initialValue,
+  });
+
   return new Proxy(value as Reactive<T>, {
     get(target, p, receiver) {
       const rs = Reflect.get(target(), p, receiver);
+
+      if (p === INTERNAL_RAW_KEY) {
+        return rs;
+      }
+
       return typeof rs === "object" && rs !== null
         ? proxyObject(rs, (data) => setter({ [p]: data } as Partial<T>))
         : rs;
@@ -54,6 +97,10 @@ export default function reactive<T extends object>(initialValue: T) {
 }
 
 export function shallowReactive<T extends object>(initialValue: T) {
+  if (isShallowReactive<T>(initialValue)) {
+    return initialValue;
+  }
+  initialValue = toRaw(initialValue) as T;
   const value = signal<T>(initialValue);
   const setter = (newValue: Partial<T>) => {
     /**
@@ -70,7 +117,19 @@ export function shallowReactive<T extends object>(initialValue: T) {
           }
     ) as T;
     value(nextValue);
+    Reflect.set(value, INTERNAL_RAW_KEY, value());
   };
+
+  Reflect.defineProperty(value, INTERNAL_REACTIVE_KEY, {
+    configurable: false,
+    writable: false,
+    value: INTERNAL_SHALLOW_REACTIVE_FLAG,
+  });
+
+  Reflect.defineProperty(value, INTERNAL_RAW_KEY, {
+    value: initialValue,
+  });
+
   return new Proxy(value as Reactive<T>, {
     get(target, p, receiver) {
       return Reflect.get(target(), p, receiver);

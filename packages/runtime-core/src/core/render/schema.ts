@@ -997,12 +997,15 @@ if (!EventBus.has(EVENTS.__INTERNAL_UPDATE)) {
       nextSchema,
       originalSchema,
     }: {
-      nextSchema: DomilyRenderSchema<any, any, any>;
-      originalSchema: DomilyRenderSchema<any, any, any>;
+      nextSchema: DomilyRenderSchema<any, any, any> | null;
+      originalSchema: DomilyRenderSchema<any, any, any> | null;
     }) => {
+      if (!originalSchema) {
+        return;
+      }
       originalSchema.__dom = replaceDOM(
         originalSchema.__dom,
-        nextSchema.render()
+        nextSchema?.render?.() || null
       );
     }
   );
